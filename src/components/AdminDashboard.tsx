@@ -61,6 +61,7 @@ import { departmentService } from '../services/departmentService.ts';
 import { ReportTemplateStudioModal } from './ReportTemplateStudioModal.tsx';
 import { BulkOperationsModal } from './BulkOperationsModal.tsx';
 import { bulkOperationsEngine, type BulkTargetType } from '../services/bulkOperationsEngine.ts';
+import { ConfigurationGovernanceView } from './ConfigurationGovernanceView.tsx';
 
 interface AdminDashboardProps {
   currentUser: UserSession;
@@ -1278,7 +1279,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             }`}
           >
             <Shield className="w-3.5 h-3.5" />
-            <span>Directives & Matrix</span>
+            <span>Governance & Versioning</span>
           </button>
 
           <button
@@ -2307,7 +2308,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {/* 9. Tab Content 6: GOVERNANCE & MATRIX */}
       {activeSubTab === 'GOVERNANCE' && (
-        <div className="flex-1 min-h-0 overflow-y-auto space-y-3 pr-1">
+        <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1">
+          {/* Phase 8 Configuration Governance, Versioning & Governed Rollback */}
+          <ConfigurationGovernanceView currentUser={currentUser} />
+
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-2xs">
             <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-2 flex items-center gap-2">
               <Shield className="w-4 h-4 text-ob-indigo-600 dark:text-ob-indigo-400" />

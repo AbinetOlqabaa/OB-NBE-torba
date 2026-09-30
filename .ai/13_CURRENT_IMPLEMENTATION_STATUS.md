@@ -1,4 +1,4 @@
-# 13 - CURRENT IMPLEMENTATION STATUS: PHASE 7 REAL-TIME SINGLE-SOURCE-OF-TRUTH SYNCHRONIZATION
+# 13 - CURRENT IMPLEMENTATION STATUS: PHASE 8 CONFIGURATION GOVERNANCE, VERSIONING, APPROVAL AND ROLLBACK
 **Application**: Oromia Bank NBE Regulatory Reporting Platform  
 **Compliance Authority**: National Bank of Ethiopia (Bank Supervision Directorate)  
 **Licensed Institution**: Oromia Bank S.C. (InstCode: `0000013`)  
@@ -6,7 +6,7 @@
 **Execution Date**: 2026-09-30  
 **Build Status**: ✅ PASSING (`compile_applet` / `npm run build` 100% clean)  
 **TypeScript Lint Status**: ✅ PASSING (`npm run lint` / `tsc --noEmit` 0 errors)  
-**Automated Test Runner**: ✅ PASSING (19/19 comprehensive test suites green [100% pass], including `realtime-ssot-synchronization.test.ts`)  
+**Automated Test Runner**: ✅ PASSING (20/20 comprehensive test suites green [100% pass], including `configuration-governance-versioning.test.ts`)  
 
 ---
 
@@ -14,6 +14,7 @@
 
 | Module | Core Files | Status | Test Coverage |
 |---|---|---|---|
+| **Phase 8 Configuration Governance, Versioning, Approval & Rollback** | `src/services/configurationGovernanceService.ts`, `src/components/ConfigurationGovernanceView.tsx`, `src/services/configService.ts`, `server.ts`, `08_CONFIGURATION_GOVERNANCE_VERSIONING_ROLLBACK.md` | COMPLETED & VERIFIED | 100% pass (`configuration-governance-versioning.test.ts` [57 assertions]): Complete lifecycle (Draft → Validate → Impact Analysis → Dual Review/Approval → Publish → Effective → Audit); Risk classification (Low, Medium, High, Critical); Multi-domain impact analysis (affected users, departments, reports, workflows, submissions, historical preservation guarantee); Secret stripping in audit logs; 4-eyes segregation of duties (proposer cannot self-approve high risk); Optimistic concurrency locking (HTTP 409 conflict); Controlled governed rollback without destroying history; Material change user notifications; Completion Gate: Official audit explanation engine ("who changed what, when, from what, to what, under which approval/workflow, when it became effective, and what it affected") |
 | **Phase 7 Real-Time Single-Source-of-Truth Synchronization** | `src/services/realtimeSsotEngine.ts`, `src/services/realtimeSsotClient.ts`, `src/hooks/useRealtimeSSOT.ts`, `server.ts`, `07_REAL_TIME_SSOT_SYNCHRONIZATION.md` | COMPLETED & VERIFIED | 100% pass (`realtime-ssot-synchronization.test.ts`): Real-time WebSocket + SSE delivery preserving Django/database authority, zero simulated timers, monotonic sequence tracking, reconnect recovery, missed events replay, duplicate event deduplication, stale cache revalidation, RBAC topic subscription authorization, sensitive credential stripping, and atomic transaction rollback safety |
 | **Phase 6 Safe Bulk Operations, Import, Export & File Workflows** | `src/services/bulkOperationsEngine.ts`, `src/components/BulkOperationsModal.tsx`, `src/components/AdminDashboard.tsx`, `src/components/DepartmentReportManagement.tsx`, `server.ts`, `06_BULK_OPERATIONS_IMPORT_EXPORT.md` | COMPLETED & VERIFIED | 100% pass (`phase6-bulk-operations.test.ts`): Formula injection (CWE-1236) sanitization, zero-mutation dry-run guarantee, mandatory preview-confirm workflow, conflict resolution (UPDATE/SKIP/FAIL), deep entity validation, atomic transaction rollback to pristine state, partial success mode, bulk multi-select user operations (activate, deactivate, department reassign, role change, special access), report retirement/reactivation, authorized exports (CSV/XLSX), audit trails, and large dataset pagination |
 | **Phase 5 User / Department / Report / Role Relationship Engine** | `src/services/effectiveAccessEngine.ts`, `src/services/submissionService.ts`, `src/services/userService.ts`, `server.ts`, `.ai/05_USER_DEPARTMENT_REPORT_RELATIONSHIP_ENGINE.md` | COMPLETED & VERIFIED | 100% pass (`relationship-effective-access-engine.test.ts`): Authoritative effective-access derivation formula, 4-role strict separation, department isolation, direct user assignments without code edits, controlled special access (scope, reason, expiration, revocation, audit trail), account status lifecycle (active, pending, disabled, suspended), retired report lifecycle, dual-control 4-eyes segregation, and sub-millisecond cache with real-time invalidation |
@@ -32,6 +33,78 @@
 | **Excel Service** | `src/utils/excelService.ts` | COMPLETED & VERIFIED | Lossless multi-sheet .xlsx generation, dynamic area tables, re-import |
 | **Knowledge Base Normalization**| `.ai/*.md` (29 canonical files) | COMPLETED & VERIFIED | Strict `NUMBER_CANONICAL_NAME.md` schema, zero duplicates, clean index |
 | **Phase 1 Terminology Update** | `src/components/LoginPage.tsx`, `src/components/RegisterPage.tsx` | COMPLETED & VERIFIED | Maker / Checker / Auditor prompt, button, title, and role selection verified |
+
+---
+
+## 0.00 Phase 8 Implementation Status: CONFIGURATION GOVERNANCE, VERSIONING, APPROVAL AND ROLLBACK
+
+**Phase 8 Status**: ✅ **COMPLETED & VERIFIED**
+
+### Summary of Completed Phase 8 Capabilities:
+
+1. **Controlled Governance Lifecycle (`src/services/configurationGovernanceService.ts`)**:
+   - **Full Lifecycle Flow**: `Draft → Validate → Impact Analysis → Dual Review/Approval → Publish → Effective → Audit`.
+   - **Risk Classification Engine**:
+     - `CRITICAL`: Role permissions, RBAC authorization changes, statutory return deletions/decommissioning.
+     - `HIGH`: Mathematical formula modifications, structural field removals, department restructuring, workflow alteration, and rollbacks.
+     - `MEDIUM`: Report description updates, non-mandatory field additions, non-critical assignments.
+     - `LOW`: Minor cosmetic notes, display labels. Auto-approval permitted without blocking.
+   - **Multi-Domain Impact Analysis**:
+     - Evaluates affected users (direct report duties + department members + compliance supervisors).
+     - Identifies affected departments (primary owner + linked organizational units).
+     - Identifies affected reports, schedules, and calculation formulas.
+     - Identifies affected workflow definitions and submission steps.
+     - Assesses active submissions (draft, pending review, approved, sent) and guarantees historical non-repudiation (`historicalPreserved: true`).
+     - Detects breaking changes and generates actionable warning alerts.
+   - **Dual Control & Segregation of Duties (4-Eyes Rule)**:
+     - Strict rule: Proposer CANNOT approve their own high-impact configuration change (`SEGREGATION_OF_DUTIES_VIOLATION`).
+     - Review requires independent `CHECKER` or `ADMIN` role (`UNAUTHORIZED_APPROVAL` guard).
+     - Rejection workflow preserves mandatory audit reason.
+   - **Optimistic Concurrency Locking**:
+     - Each proposal captures `expectedEntityVersion` and config hash upon drafting.
+     - Publication verifies `expectedEntityVersion === currentEntityVersion`. If background changes occurred, rejects with `CONCURRENCY_CONFLICT` (HTTP 409) preventing silent overwrite.
+   - **Controlled Governed Rollback**:
+     - A rollback is a new auditable change; history is NEVER rewritten or deleted.
+     - Rollback creates a new version snapshot (Version N+1) reproducing the target historical schema.
+     - Past versions remain permanently accessible in SSOT registry.
+     - Historical submissions remain permanently pinned to their submission version schema.
+   - **Material Change User Notifications**:
+     - Users affected by Medium, High, or Critical changes receive targeted in-app governance notifications.
+     - Low-risk edits bypass notification dispatch to prevent noise.
+   - **Credential & Secret Stripping in Audit Logs**:
+     - Deep recursive sanitization scrubs `password`, `token`, `secret`, `credential`, `hash`, `pin`, and `key` to `[REDACTED_FOR_SECURITY]`.
+   - **Phase 8 Completion Gate: Official Audit Explanation Engine**:
+     - `explainChange(proposalId)` explains:
+       1. **Who**: Actor name, ID, and role.
+       2. **What**: Action type on target entity name and type.
+       3. **When**: Precise ISO timestamp.
+       4. **From What**: Sanitized before-state.
+       5. **To What**: Sanitized after-state with field-level diffs.
+       6. **Under Which Approval/Workflow**: Approver name, role, timestamp, comments, and 4-eyes confirmation.
+       7. **When It Became Effective**: Effective from/to dates and active status.
+       8. **What It Affected**: Affected counts (users, departments, reports, submissions) and narrative summary.
+
+2. **Frontend UI Components (`src/components/ConfigurationGovernanceView.tsx`)**:
+   - Integrated into `AdminDashboard.tsx` under the **Governance & Versioning** tab.
+   - Integrated into `ChangeHistoryView.tsx` with a top view-mode selector (**Governed Proposals & Approvals**).
+   - Features: Search, status filter, risk filter, 7-step visual lifecycle progress stepper, impact cards, before/after diff table, 4-eyes review approval modal, rejection dialog, rollback modal with target version picker, and the official "Explain Change" inspection modal.
+
+3. **Backend REST API Endpoints (`server.ts`)**:
+   - `GET /api/governance/proposals`
+   - `GET /api/governance/proposals/:id`
+   - `POST /api/governance/proposals`
+   - `POST /api/governance/proposals/:id/validate`
+   - `POST /api/governance/proposals/:id/approve`
+   - `POST /api/governance/proposals/:id/reject`
+   - `POST /api/governance/proposals/:id/publish`
+   - `POST /api/governance/proposals/rollback`
+   - `GET /api/governance/proposals/:id/explain`
+   - `GET /api/governance/notifications`
+   - `POST /api/governance/notifications/:id/read`
+
+4. **Automated Verification**:
+   - `src/tests/configuration-governance-versioning.test.ts`: 57 assertions passing cleanly.
+   - Full automated test runner (`src/tests/run-all-tests.ts`): 20/20 test suites passing with 100% success.
 
 ---
 

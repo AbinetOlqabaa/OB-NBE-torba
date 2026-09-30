@@ -28,6 +28,7 @@ import { configService } from './src/services/configService.ts';
 import { effectiveAccessEngine } from './src/services/effectiveAccessEngine.ts';
 import { bulkOperationsEngine } from './src/services/bulkOperationsEngine.ts';
 import { realtimeSsotEngine } from './src/services/realtimeSsotEngine.ts';
+import { configurationGovernanceService } from './src/services/configurationGovernanceService.ts';
 
 dotenv.config();
 
@@ -427,6 +428,144 @@ app.get('/api/config/workflows', (req, res) => {
 app.get('/api/config/changes', (req, res) => {
   const limit = parseInt((req.query.limit as string) || '100', 10);
   res.json(configService.getChangeLogs(limit));
+});
+
+// -------------------------------------------------------------
+// PHASE 8: CONFIGURATION GOVERNANCE, VERSIONING & ROLLBACK API
+// -------------------------------------------------------------
+
+// List proposals
+app.get('/api/governance/proposals', (req, res) => {
+  const { status, riskLevel, entityType, entityId } = req.query;
+  const proposals = configurationGovernanceService.getProposals({
+    status: status as any,
+    riskLevel: riskLevel as any,
+    entityType: entityType as any,
+    entityId: entityId as string,
+  });
+  res.json(proposals);
+});
+
+// Get proposal by ID
+app.get('/api/governance/proposals/:id', (req, res) => {
+  const proposal = configurationGovernanceService.getProposalById(req.params.id);
+  if (!proposal) {
+    res.status(404).json({ error: `Proposal '${req.params.id}' not found` });
+    return;
+  }
+  res.json(proposal);
+});
+
+// Create proposal draft
+app.post('/api/governance/proposals', (req, res) => {
+  const actor = req.body.proposer || {
+    id: 'usr_admin',
+    name: 'Compliance Administrator',
+    role: 'ADMIN',
+    department: 'Compliance & Legal Governance',
+  };
+  try {
+    const proposal = configurationGovernanceService.createProposalDraft(req.body, actor);
+    res.status(201).json(proposal);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Validate proposal
+app.post('/api/governance/proposals/:id/validate', (req, res) => {
+  const validator = req.body.validator || { id: 'usr_admin', name: 'Compliance Administrator', role: 'ADMIN' };
+  try {
+    const validated = configurationGovernanceService.validateProposal(req.params.id, validator);
+    res.json(validated);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Approve proposal (with 4-Eyes Segregation of Duties checks)
+app.post('/api/governance/proposals/:id/approve', (req, res) => {
+  const approver = req.body.approver || { id: 'usr_checker', name: 'Regulatory Checker', role: 'CHECKER' };
+  const comments = req.body.comments || 'Approved under NBE regulatory governance guidelines';
+  try {
+    const approved = configurationGovernanceService.approveProposal(req.params.id, approver, comments);
+    res.json(approved);
+  } catch (err: any) {
+    const statusCode = err.message?.includes('SEGREGATION_OF_DUTIES_VIOLATION') ? 403 : 400;
+    res.status(statusCode).json({ error: err.message });
+  }
+});
+
+// Reject proposal
+app.post('/api/governance/proposals/:id/reject', (req, res) => {
+  const rejector = req.body.rejector || { id: 'usr_checker', name: 'Regulatory Checker', role: 'CHECKER' };
+  const reason = req.body.reason || 'Rejected by regulatory governance reviewer';
+  try {
+    const rejected = configurationGovernanceService.rejectProposal(req.params.id, rejector, reason);
+    res.json(rejected);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Publish proposal (enforces optimistic concurrency locking)
+app.post('/api/governance/proposals/:id/publish', (req, res) => {
+  const publisher = req.body.publisher || { id: 'usr_admin', name: 'Compliance Administrator', role: 'ADMIN' };
+  try {
+    const result = configurationGovernanceService.publishProposal(req.params.id, publisher);
+    res.json(result);
+  } catch (err: any) {
+    const statusCode = err.message?.includes('CONCURRENCY_CONFLICT') ? 409 : 400;
+    res.status(statusCode).json({ error: err.message });
+  }
+});
+
+// Rollback to earlier configuration version
+app.post('/api/governance/proposals/rollback', (req, res) => {
+  const { entityType, entityId, targetVersionNumber, reason } = req.body;
+  const actor = req.body.actor || { id: 'usr_admin', name: 'Compliance Administrator', role: 'ADMIN' };
+  if (!entityType || !entityId || targetVersionNumber === undefined || !reason) {
+    res.status(400).json({ error: 'entityType, entityId, targetVersionNumber, and reason are required' });
+    return;
+  }
+  try {
+    const proposal = configurationGovernanceService.rollbackToVersion(
+      entityType,
+      entityId,
+      Number(targetVersionNumber),
+      actor,
+      reason
+    );
+    res.status(201).json(proposal);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Explain change completion gate
+app.get('/api/governance/proposals/:id/explain', (req, res) => {
+  try {
+    const explanation = configurationGovernanceService.explainChange(req.params.id);
+    res.json(explanation);
+  } catch (err: any) {
+    res.status(404).json({ error: err.message });
+  }
+});
+
+// Get user notifications
+app.get('/api/governance/notifications', (req, res) => {
+  const userId = req.query.userId as string;
+  if (userId) {
+    res.json(configurationGovernanceService.getNotificationsForUser(userId));
+  } else {
+    res.json(configurationGovernanceService.getAllNotifications());
+  }
+});
+
+// Mark notification as read
+app.post('/api/governance/notifications/:id/read', (req, res) => {
+  configurationGovernanceService.markNotificationAsRead(req.params.id);
+  res.json({ success: true });
 });
 
 // -------------------------------------------------------------

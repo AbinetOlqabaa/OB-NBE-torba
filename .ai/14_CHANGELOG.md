@@ -4,6 +4,58 @@ All notable changes and engineering enhancements for the Oromia Bank NBE Regulat
 
 ---
 
+## [8.0.0-phase8-configuration-governance-versioning-rollback] - 2026-09-30
+
+### Added
+- **Configuration Governance & Versioning Engine (`src/services/configurationGovernanceService.ts`, `08_CONFIGURATION_GOVERNANCE_VERSIONING_ROLLBACK.md`)**:
+  - Full controlled lifecycle: `Draft → Validate → Impact Analysis → Dual Review/Approval → Publish → Effective → Audit`.
+  - Four-tier risk classification engine:
+    - `CRITICAL`: Role permissions, RBAC authorization, statutory return deletion.
+    - `HIGH`: Mathematical formula alteration, field deletion, department restructuring, workflow alteration, and rollbacks.
+    - `MEDIUM`: Description updates, optional field additions, non-critical assignments.
+    - `LOW`: Cosmetic notes, display order adjustments. Auto-approval permitted.
+  - Multi-domain impact analysis identifying affected:
+    - Users (by report duty, department membership, and compliance supervisory responsibilities).
+    - Departments (primary owners and contributing linked departments).
+    - Reports (return keys, frequencies, formulas, and dependent schedules).
+    - Workflows (submission review steps and role requirements).
+    - Permissions (modified roles and authorization matrix).
+    - Active and historical submissions (drafts, pending review, approved, sent), with explicit non-repudiation guarantees.
+  - Credential and secret sanitization (`sanitizeGovernanceState`): Deep recursive scrubbing of passwords, tokens, API keys, hashes, and PINs to `[REDACTED_FOR_SECURITY]` in all before/after states.
+  - Segregation of duties & 4-eyes rule enforcement:
+    - Strict prohibition: Proposer cannot approve their own high-impact configuration proposal (`SEGREGATION_OF_DUTIES_VIOLATION`).
+    - Review restricted strictly to authorized `ADMIN` or `CHECKER` roles (`UNAUTHORIZED_APPROVAL`).
+  - Optimistic concurrency locking & collision prevention:
+    - Automatic version tracking (`expectedEntityVersion` and config hash) prevents administrators from silently overwriting each other's changes (`CONCURRENCY_CONFLICT`, HTTP 409).
+  - Controlled governed rollback:
+    - A rollback is a new auditable change; past versions and historical submissions are NEVER rewritten or lost.
+    - Rollback creates a new version snapshot (Version N+1) reproducing the target historical schema.
+  - Material change user notifications:
+    - Users affected by material configuration changes receive targeted notifications detailing risk level, effective date, and impact rationale.
+  - Phase 8 Completion Gate: Official audit explanation engine (`explainChange`):
+    - Explains who changed what, when, from what, to what, under which approval/workflow, when it became effective, and what it affected.
+- **Native ConfigService Rollback Integration (`src/services/configService.ts`)**:
+  - `rollbackReportVersion(returnKey, targetVersionNumber, actor, reason)` safely recreates target schema as Version N+1 with permanent audit recording.
+- **Frontend Governance Component (`src/components/ConfigurationGovernanceView.tsx`)**:
+  - Rich split-pane workspace with proposal search, multi-level filters, 7-step visual lifecycle stepper, dependency impact cards, sanitized before/after diff table, 4-eyes review approval modal, rejection dialog, rollback modal with version picker, and the official "Explain Change" inspection modal.
+  - Embedded into `src/components/AdminDashboard.tsx` under the **Governance & Versioning** tab.
+  - Embedded into `src/components/ChangeHistoryView.tsx` with a top view-mode selector (**Governed Proposals & Approvals**).
+- **Server REST API Endpoints (`server.ts`)**:
+  - `/api/governance/proposals` (GET, POST)
+  - `/api/governance/proposals/:id` (GET)
+  - `/api/governance/proposals/:id/validate` (POST)
+  - `/api/governance/proposals/:id/approve` (POST)
+  - `/api/governance/proposals/:id/reject` (POST)
+  - `/api/governance/proposals/:id/publish` (POST)
+  - `/api/governance/proposals/rollback` (POST)
+  - `/api/governance/proposals/:id/explain` (GET)
+  - `/api/governance/notifications` (GET)
+  - `/api/governance/notifications/:id/read` (POST)
+- **Comprehensive Automated Test Suite (`src/tests/configuration-governance-versioning.test.ts`)**:
+  - 11 test sections (57 assertions, 100% pass) verifying secret sanitization, risk classification, impact analysis, structural validation, segregation of duties, optimistic concurrency collisions, publication, rejection, rollback, and the official audit explanation completion gate.
+
+---
+
 ## [7.0.0-phase7-real-time-ssot-synchronization] - 2026-09-30
 
 ### Added
