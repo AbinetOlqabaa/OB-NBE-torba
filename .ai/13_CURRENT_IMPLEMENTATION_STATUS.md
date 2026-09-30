@@ -25,6 +25,7 @@
 | **Phase 2 SSOT Ingestion** | `src/services/phase2Pipeline.ts`, `src/services/ssotRegistry.ts` | COMPLETED & VERIFIED | Bronze/Silver/Gold pipeline, DQ rules, automated GL reconciliation |
 | **Excel Service** | `src/utils/excelService.ts` | COMPLETED & VERIFIED | Lossless multi-sheet .xlsx generation, dynamic area tables, re-import |
 | **Knowledge Base Normalization**| `.ai/*.md` (29 canonical files) | COMPLETED & VERIFIED | Strict `NUMBER_CANONICAL_NAME.md` schema, zero duplicates, clean index |
+| **Phase 1 Terminology Update** | `src/components/LoginPage.tsx`, `src/components/RegisterPage.tsx` | COMPLETED & VERIFIED | Maker / Checker / Auditor prompt, button, title, and role selection verified |
 
 ---
 

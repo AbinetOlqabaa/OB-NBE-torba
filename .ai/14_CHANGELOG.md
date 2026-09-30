@@ -4,30 +4,22 @@ All notable changes and engineering enhancements for the Oromia Bank NBE Regulat
 
 ---
 
-## [1.9.1-phase0-ai-normalization] - 2026-09-30
-
-### Added
-- **Canonical Knowledge Base Map & Master AI Index (`.ai/00_START_HERE.md`)**:
-  - Ingested and indexed all 29 canonical engineering specifications (`00_` through `28_`).
-  - Defined explicit reading order, purpose, and trigger conditions for incoming AI agents.
-  - Formulated mandatory Account Migration and Quota Safety rules.
-- **Dedicated Continuation and Recovery Guide (`.ai/03_CONTINUATION_AND_RECOVERY.md`)**:
-  - Restored canonical quick verification commands and architectural layout map.
-- **Account Migration & Continuation Protocol (`.ai/20_ACCOUNT_MIGRATION_AND_CONTINUATION.md`)**:
-  - Consolidated multi-account handoff protocols, quota-safety discipline, and post-migration integrity rules.
+## [1.9.2-phase1-login-registration-terminology] - 2026-09-30
 
 ### Changed
-- **Standardized Canonical File Naming**:
-  - Renamed `02_OB_SYSTEM_SPECIFICATION.md` to `02_OB_SYSTEM_SPECIFICATION.md`.
-  - Renamed `01_MASTER_AUTONOMOUS_ENGINEER.md` to `01_MASTER_AUTONOMOUS_ENGINEER.md`.
-  - Upgraded `00_START_HERE.md` to canonical `00_START_HERE.md`.
-  - Standardized all 29 engineering documents with uniform two-digit numeric prefixes (`00_` to `28_`).
-- **Complete Reference Repair**:
-  - Repaired all internal Markdown cross-references across all `.ai/*.md` documents to use canonical numbered filenames.
-  - Eliminated broken and un-prefixed references.
-- **Duplicate & Redundant Document Elimination**:
-  - Merged unique content from unnumbered and partial duplicates (`14_CHANGELOG.md`, `13_CURRENT_IMPLEMENTATION_STATUS.md`, `13_CURRENT_IMPLEMENTATION_STATUS.md`, `20_ACCOUNT_MIGRATION_AND_CONTINUATION.md`, `03_CONTINUATION_AND_RECOVERY.md`, `20_ACCOUNT_MIGRATION_AND_CONTINUATION.md`) into their canonical counterparts.
-  - Removed all redundant unnumbered clones and 0-byte placeholder files.
+- **Login Registration Prompt (`src/components/LoginPage.tsx`)**:
+  - Replaced prompt with exact required terminology: `"Need access as a new Maker / Checker / Auditor?"`.
+  - Maintained responsive typography (`text-[11px] sm:text-xs text-slate-500 dark:text-slate-400`).
+- **Login Registration Button (`src/components/LoginPage.tsx`)**:
+  - Replaced button label with exact required terminology: `"Register for Maker / Checker / Auditor Account"`.
+  - Preserved `min-h-[44px]` touch target, `UserPlus` icon, and smooth transition.
+- **Registration Page Title (`src/components/RegisterPage.tsx`)**:
+  - Updated page header with exact required terminology: `"Request Maker / Checker / Auditor Credentials"`.
+  - Maintained responsive typography (`text-base sm:text-xl font-bold tracking-tight`).
+- **Auditor Role Availability**:
+  - Verified `AUDITOR` option remains fully active in the registration role selection dropdown with Abinet Alemu directive permission boundary notice.
+- **Automated Verification**:
+  - Added dedicated test assertions in `src/tests/responsive-ui-and-layout.test.ts` verifying all three exact strings, absence of obsolete text, and active Auditor option.
 
 ---
 
@@ -45,42 +37,12 @@ All notable changes and engineering enhancements for the Oromia Bank NBE Regulat
 
 ### Changed
 - **Standardized Canonical File Naming**:
-  - Renamed `02_OB_SYSTEM_SPECIFICATION.md` to `02_OB_SYSTEM_SPECIFICATION.md`.
-  - Renamed `01_MASTER_AUTONOMOUS_ENGINEER.md` to `01_MASTER_AUTONOMOUS_ENGINEER.md`.
-  - Upgraded `00_START_HERE.md` to canonical `00_START_HERE.md`.
   - Standardized all 29 engineering documents with uniform two-digit numeric prefixes (`00_` to `28_`).
 - **Complete Reference Repair**:
   - Repaired all internal Markdown cross-references across all `.ai/*.md` documents to use canonical numbered filenames.
   - Eliminated broken and un-prefixed references.
 - **Duplicate & Redundant Document Elimination**:
-  - Merged unique content from unnumbered and partial duplicates (`14_CHANGELOG.md`, `13_CURRENT_IMPLEMENTATION_STATUS.md`, `13_CURRENT_IMPLEMENTATION_STATUS.md`, `20_ACCOUNT_MIGRATION_AND_CONTINUATION.md`, `03_CONTINUATION_AND_RECOVERY.md`, `20_ACCOUNT_MIGRATION_AND_CONTINUATION.md`) into their canonical counterparts.
-  - Removed all redundant unnumbered clones and 0-byte placeholder files.
-
----
-
-## [1.9.1-phase0-ai-normalization] - 2026-09-30
-
-### Added
-- **Canonical Knowledge Base Map & Master AI Index ()**:
-  - Ingested and indexed all 29 canonical engineering specifications ( through ).
-  - Defined explicit reading order, purpose, and trigger conditions for AI agents.
-  - Formulated mandatory Account Migration and Quota Safety rules.
-- **Dedicated Continuation and Recovery Guide ()**:
-  - Restored canonical quick verification commands and architectural layout map.
-- **Account Migration & Continuation Protocol ()**:
-  - Consolidated multi-account handoff protocols, quota-safety discipline, and post-migration integrity rules.
-
-### Changed
-- **Standardized Canonical File Naming**:
-  - Renamed  to .
-  - Renamed  to .
-  - Upgraded  to canonical .
-  - Unified all 29 engineering documents with uniform two-digit numeric prefixes ( to ).
-- **Complete Reference Repair**:
-  - Repaired all internal Markdown cross-references across all  documents to use canonical numbered filenames.
-  - Eliminated broken and un-prefixed references.
-- **Duplicate & Redundant Document Elimination**:
-  - Merged unique content from unnumbered and partial duplicates (, , , , , ) into their canonical counterparts.
+  - Merged unique content from unnumbered and partial duplicates into their canonical counterparts.
   - Removed all redundant unnumbered clones and 0-byte placeholder files.
 
 ---
