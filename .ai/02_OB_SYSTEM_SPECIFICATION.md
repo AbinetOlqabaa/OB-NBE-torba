@@ -157,30 +157,30 @@ Create and continuously maintain a project-control directory:
 
 with at least:
 
-.ai/START_HERE.md
-.ai/PROJECT_MEMORY.md
-.ai/ARCHITECTURE.md
-.ai/SYSTEM_REQUIREMENTS.md
-.ai/SSOT.md
-.ai/REPORT_CATALOG.md
-.ai/DEPARTMENT_CATALOG.md
-.ai/RBAC_MATRIX.md
-.ai/WORKFLOW_MODEL.md
-.ai/SECURITY_MODEL.md
-.ai/AUDIT_MODEL.md
-.ai/API_CONTRACTS.md
-.ai/DATABASE_MODEL.md
-.ai/UI_UX_SPEC.md
-.ai/TASK_QUEUE.md
-.ai/IMPLEMENTATION_STATUS.md
-.ai/TEST_PLAN.md
-.ai/TEST_STATUS.md
-.ai/SECURITY_REVIEW.md
-.ai/KNOWN_ISSUES.md
-.ai/DECISIONS.md
-.ai/CHANGELOG.md
-.ai/RECOVERY.md
-.ai/COMPLETION_EVIDENCE.md
+.ai/00_START_HERE.md
+.ai/04_PROJECT_MEMORY.md
+.ai/06_ARCHITECTURE.md
+.ai/05_SYSTEM_REQUIREMENTS.md
+.ai/07_SSOT.md
+.ai/09_REPORT_CATALOG.md
+.ai/08_DEPARTMENT_CATALOG.md
+.ai/12_RBAC_MATRIX.md
+.ai/21_WORKFLOW_MODEL.md
+.ai/22_SECURITY_MODEL.md
+.ai/19_AUDITOR_ROLE_AND_AUDIT_WORKFLOW.md
+.ai/11_NBE_CONTRACT.md
+.ai/06_ARCHITECTURE.md
+.ai/17_UI_UX_RESPONSIVENESS_AUDIT_AND_ENHANCEMENT.md
+.ai/25_TASK_QUEUE.md
+.ai/13_CURRENT_IMPLEMENTATION_STATUS.md
+.ai/28_COMPLETION_EVIDENCE.md
+.ai/28_COMPLETION_EVIDENCE.md
+.ai/22_SECURITY_MODEL.md
+.ai/27_KNOWN_ISSUES.md
+.ai/24_DECISIONS.md
+.ai/14_CHANGELOG.md
+.ai/03_CONTINUATION_AND_RECOVERY.md
+.ai/28_COMPLETION_EVIDENCE.md
 
 These files are persistent engineering memory.
 
@@ -192,14 +192,14 @@ READ THE .ai DIRECTORY.
 
 At minimum read:
 
-START_HERE.md
-PROJECT_MEMORY.md
-ARCHITECTURE.md
-SYSTEM_REQUIREMENTS.md
-SSOT.md
-TASK_QUEUE.md
-IMPLEMENTATION_STATUS.md
-KNOWN_ISSUES.md
+00_START_HERE.md
+04_PROJECT_MEMORY.md
+06_ARCHITECTURE.md
+05_SYSTEM_REQUIREMENTS.md
+07_SSOT.md
+25_TASK_QUEUE.md
+13_CURRENT_IMPLEMENTATION_STATUS.md
+27_KNOWN_ISSUES.md
 
 After meaningful implementation:
 
@@ -207,10 +207,10 @@ UPDATE the appropriate files.
 
 Before ending a run:
 
-UPDATE TASK_QUEUE.md
-UPDATE IMPLEMENTATION_STATUS.md
-UPDATE PROJECT_MEMORY.md
-UPDATE RECOVERY.md
+UPDATE 25_TASK_QUEUE.md
+UPDATE 13_CURRENT_IMPLEMENTATION_STATUS.md
+UPDATE 04_PROJECT_MEMORY.md
+UPDATE 03_CONTINUATION_AND_RECOVERY.md
 
 The next agent/session must be able to continue without asking the
 user to explain what has already been done.
@@ -353,10 +353,10 @@ CONFIRMED information.
 
 Maintain this distinction in:
 
-.ai/SSOT.md
-.ai/REPORT_CATALOG.md
-.ai/DEPARTMENT_CATALOG.md
-.ai/DECISIONS.md
+.ai/07_SSOT.md
+.ai/09_REPORT_CATALOG.md
+.ai/08_DEPARTMENT_CATALOG.md
+.ai/24_DECISIONS.md
 
 ---
 
@@ -421,7 +421,7 @@ record it as unresolved rather than inventing it.
 
 Create:
 
-.ai/DEPARTMENT_CATALOG.md
+.ai/08_DEPARTMENT_CATALOG.md
 
 containing:
 
@@ -783,7 +783,7 @@ Never hide uncertainty.
 
 Create:
 
-.ai/REPORT_CATALOG.md
+.ai/09_REPORT_CATALOG.md
 
 with at least:
 
@@ -1045,21 +1045,21 @@ I would use this structure:
 
 OB-NBE-REGULATORY-PLATFORM/
 │
-├── START_HERE.md
+├── 00_START_HERE.md
 │
-├── AI_DEVELOPMENT_CONTRACT.md
-├── AI_RECOVERY_PROTOCOL.md
-├── PROJECT_MEMORY.md
-├── ARCHITECTURE.md
-├── DEVELOPMENT_PLAN.md
-├── TASK_QUEUE.md
-├── COMPLETION_CRITERIA.md
-├── TEST_STRATEGY.md
-├── DATA_CONTRACT.md
-├── NBE_API_CONTRACT.md
-├── SECURITY_REQUIREMENTS.md
-├── UI_UX_REQUIREMENTS.md
-├── CHANGELOG.md
+├── 01_MASTER_AUTONOMOUS_ENGINEER.md
+├── 03_CONTINUATION_AND_RECOVERY.md
+├── 04_PROJECT_MEMORY.md
+├── 06_ARCHITECTURE.md
+├── 23_DEVELOPMENT_PLAN.md
+├── 25_TASK_QUEUE.md
+├── 28_COMPLETION_EVIDENCE.md
+├── 28_COMPLETION_EVIDENCE.md
+├── 10_REPORT_SCHEMA_ANALYSIS.md
+├── 11_NBE_CONTRACT.md
+├── 22_SECURITY_MODEL.md
+├── 17_UI_UX_RESPONSIVENESS_AUDIT_AND_ENHANCEMENT.md
+├── 14_CHANGELOG.md
 │
 ├── package.json
 ├── ...
@@ -1099,15 +1099,15 @@ Upload ZIP.
 
 ↓
 
-Read START_HERE.md.
+Read 00_START_HERE.md.
 
 ↓
 
-Read PROJECT_MEMORY.md.
+Read 04_PROJECT_MEMORY.md.
 
 ↓
 
-Read TASK_QUEUE.md.
+Read 25_TASK_QUEUE.md.
 
 ↓
 
@@ -1378,7 +1378,7 @@ This is the most important part of the entire system.
 
 Every time the agent works, it should maintain:
 
-TASK_QUEUE.md
+25_TASK_QUEUE.md
 
 Example:
 
@@ -1431,7 +1431,7 @@ End-to-end report submission test
 
 If the agent dies after TASK-042, the next agent knows exactly where to continue.
 
-8. We should also create a PROJECT_MEMORY.md
+8. We should also create a 04_PROJECT_MEMORY.md
 
 This replaces the missing conversation history.
 
@@ -1640,13 +1640,13 @@ That's the crucial architectural shift.
 
 I would put this in:
 
-AI_DEVELOPMENT_CONTRACT.md
+01_MASTER_AUTONOMOUS_ENGINEER.md
 
 and also give a condensed version to Gemini as the initial prompt.
 
 Here is the core version I would use.
 
-AI_DEVELOPMENT_CONTRACT.md
+01_MASTER_AUTONOMOUS_ENGINEER.md
 # OB NBE REGULATORY PLATFORM
 # AUTONOMOUS DEVELOPMENT CONTRACT
 
@@ -1714,13 +1714,13 @@ the repository.
 
 Maintain:
 
-- PROJECT_MEMORY.md
-- ARCHITECTURE.md
-- DEVELOPMENT_PLAN.md
-- TASK_QUEUE.md
-- TEST_STRATEGY.md
-- COMPLETION_CRITERIA.md
-- CHANGELOG.md
+- 04_PROJECT_MEMORY.md
+- 06_ARCHITECTURE.md
+- 23_DEVELOPMENT_PLAN.md
+- 25_TASK_QUEUE.md
+- 28_COMPLETION_EVIDENCE.md
+- 28_COMPLETION_EVIDENCE.md
+- 14_CHANGELOG.md
 
 Update these documents as development progresses.
 
@@ -1731,10 +1731,10 @@ Update these documents as development progresses.
 At the beginning of every new execution:
 
 1. Inspect the repository.
-2. Read START_HERE.md.
-3. Read PROJECT_MEMORY.md.
-4. Read ARCHITECTURE.md.
-5. Read TASK_QUEUE.md.
+2. Read 00_START_HERE.md.
+3. Read 04_PROJECT_MEMORY.md.
+4. Read 06_ARCHITECTURE.md.
+5. Read 25_TASK_QUEUE.md.
 6. Inspect package.json.
 7. Inspect the current source tree.
 8. Determine the actual implementation state.
@@ -1802,7 +1802,7 @@ same result can be achieved through smaller verified steps.
 6. TASK QUEUE
 ============================================================
 
-TASK_QUEUE.md is the authoritative development queue.
+25_TASK_QUEUE.md is the authoritative development queue.
 
 Every task must contain:
 
@@ -1839,9 +1839,9 @@ Before undertaking a large task:
 1. divide it into checkpoints;
 2. finish the smallest useful unit;
 3. verify the unit;
-4. update TASK_QUEUE.md;
-5. update PROJECT_MEMORY.md;
-6. update CHANGELOG.md.
+4. update 25_TASK_QUEUE.md;
+5. update 04_PROJECT_MEMORY.md;
+6. update 14_CHANGELOG.md.
 
 Never leave the repository in an undocumented state.
 
@@ -2264,9 +2264,9 @@ Before ending an execution for ANY reason:
 
 1. save all valid code changes;
 2. run the most relevant verification;
-3. update TASK_QUEUE.md;
-4. update PROJECT_MEMORY.md;
-5. update CHANGELOG.md;
+3. update 25_TASK_QUEUE.md;
+4. update 04_PROJECT_MEMORY.md;
+5. update 14_CHANGELOG.md;
 6. record blockers;
 7. record the exact next task.
 
@@ -2310,9 +2310,9 @@ At final completion:
 4. inspect important pages;
 5. inspect important API/service paths;
 6. review security;
-7. update CHANGELOG.md;
-8. update COMPLETION_CRITERIA.md;
-9. create FINAL_VERIFICATION.md.
+7. update 14_CHANGELOG.md;
+8. update 28_COMPLETION_EVIDENCE.md;
+9. create 28_COMPLETION_EVIDENCE.md.
 
 Only then declare the project complete.
 
@@ -2344,7 +2344,7 @@ This is the prompt I would give after the ZIP has been successfully imported.
 
 Call it:
 
-RECOVER_AND_CONTINUE.md
+03_CONTINUATION_AND_RECOVERY.md
 # RECOVER AND CONTINUE
 
 You are inheriting an existing partially-developed OB NBE
@@ -2380,13 +2380,13 @@ Identify:
 
 Read:
 
-- START_HERE.md
-- PROJECT_MEMORY.md
-- ARCHITECTURE.md
-- TASK_QUEUE.md
-- DEVELOPMENT_PLAN.md
-- TEST_STRATEGY.md
-- COMPLETION_CRITERIA.md
+- 00_START_HERE.md
+- 04_PROJECT_MEMORY.md
+- 06_ARCHITECTURE.md
+- 25_TASK_QUEUE.md
+- 23_DEVELOPMENT_PLAN.md
+- 28_COMPLETION_EVIDENCE.md
+- 28_COMPLETION_EVIDENCE.md
 
 ============================================================
 STEP 2 — DETERMINE ACTUAL STATE
@@ -2435,9 +2435,9 @@ Verify:
 STEP 5 — CREATE RECOVERY REPORT
 ============================================================
 
-Update PROJECT_MEMORY.md with the actual state.
+Update 04_PROJECT_MEMORY.md with the actual state.
 
-Update TASK_QUEUE.md.
+Update 25_TASK_QUEUE.md.
 
 Do not invent missing history.
 
@@ -2481,7 +2481,7 @@ trajectory and continue implementation from its actual current state.
 
 Put a file called:
 
-START_HERE.md
+00_START_HERE.md
 
 at the root.
 
@@ -2501,13 +2501,13 @@ DO NOT assume previous conversation history exists.
 
 Read these files in order:
 
-1. AI_DEVELOPMENT_CONTRACT.md
-2. PROJECT_MEMORY.md
-3. ARCHITECTURE.md
-4. TASK_QUEUE.md
-5. DEVELOPMENT_PLAN.md
-6. TEST_STRATEGY.md
-7. COMPLETION_CRITERIA.md
+1. 01_MASTER_AUTONOMOUS_ENGINEER.md
+2. 04_PROJECT_MEMORY.md
+3. 06_ARCHITECTURE.md
+4. 25_TASK_QUEUE.md
+5. 23_DEVELOPMENT_PLAN.md
+6. 28_COMPLETION_EVIDENCE.md
+7. 28_COMPLETION_EVIDENCE.md
 
 Then inspect the actual source code.
 
@@ -2733,27 +2733,27 @@ I would make the project follow this hierarchy:
 
                     ┌───────────────────────┐
                     │ AI_DEVELOPMENT_       │
-                    │ CONTRACT.md           │
+                    │ 01_MASTER_AUTONOMOUS_ENGINEER.md           │
                     └───────────┬───────────┘
                                 │
                                 ▼
                     ┌───────────────────────┐
-                    │ PROJECT_MEMORY.md     │
+                    │ 04_PROJECT_MEMORY.md     │
                     └───────────┬───────────┘
                                 │
                                 ▼
                     ┌───────────────────────┐
-                    │ ARCHITECTURE.md       │
+                    │ 06_ARCHITECTURE.md       │
                     └───────────┬───────────┘
                                 │
                                 ▼
                     ┌───────────────────────┐
-                    │ DEVELOPMENT_PLAN.md   │
+                    │ 23_DEVELOPMENT_PLAN.md   │
                     └───────────┬───────────┘
                                 │
                                 ▼
                     ┌───────────────────────┐
-                    │ TASK_QUEUE.md         │
+                    │ 25_TASK_QUEUE.md         │
                     └───────────┬───────────┘
                                 │
                                 ▼
@@ -2837,16 +2837,16 @@ The final project could contain:
 
 .ai/
 │
-├── PROJECT_MEMORY.md
-├── ARCHITECTURE.md
-├── DEVELOPMENT_PLAN.md
-├── TASK_QUEUE.md
-├── TEST_STRATEGY.md
-├── SECURITY_REVIEW.md
-├── COMPLETION_CRITERIA.md
-├── CHANGELOG.md
-├── RECOVERY_PROTOCOL.md
-└── AGENT_RULES.md
+├── 04_PROJECT_MEMORY.md
+├── 06_ARCHITECTURE.md
+├── 23_DEVELOPMENT_PLAN.md
+├── 25_TASK_QUEUE.md
+├── 28_COMPLETION_EVIDENCE.md
+├── 22_SECURITY_MODEL.md
+├── 28_COMPLETION_EVIDENCE.md
+├── 14_CHANGELOG.md
+├── 03_CONTINUATION_AND_RECOVERY.md
+└── 01_MASTER_AUTONOMOUS_ENGINEER.md
 
 Then the agent is essentially operating inside a self-documenting software project.
 
@@ -2917,21 +2917,21 @@ I can prepare a complete "OB AI Agent Continuation Pack" as a set of .md files, 
 
 OB_AI_AGENT_PACK/
 │
-├── START_HERE.md
-├── AI_DEVELOPMENT_CONTRACT.md
-├── RECOVERY_AND_CONTINUE.md
-├── PROJECT_MEMORY.md
-├── ARCHITECTURE.md
-├── DEVELOPMENT_PLAN.md
-├── TASK_QUEUE.md
-├── TEST_STRATEGY.md
-├── DATA_CONTRACT.md
-├── NBE_API_CONTRACT.md
-├── SECURITY_REQUIREMENTS.md
-├── UI_UX_REQUIREMENTS.md
-├── COMPLETION_CRITERIA.md
-├── CHANGELOG.md
-└── FINAL_VERIFICATION.md
+├── 00_START_HERE.md
+├── 01_MASTER_AUTONOMOUS_ENGINEER.md
+├── 03_CONTINUATION_AND_RECOVERY.md
+├── 04_PROJECT_MEMORY.md
+├── 06_ARCHITECTURE.md
+├── 23_DEVELOPMENT_PLAN.md
+├── 25_TASK_QUEUE.md
+├── 28_COMPLETION_EVIDENCE.md
+├── 10_REPORT_SCHEMA_ANALYSIS.md
+├── 11_NBE_CONTRACT.md
+├── 22_SECURITY_MODEL.md
+├── 17_UI_UX_RESPONSIVENESS_AUDIT_AND_ENHANCEMENT.md
+├── 28_COMPLETION_EVIDENCE.md
+├── 14_CHANGELOG.md
+└── 28_COMPLETION_EVIDENCE.md
 
 I would tailor those files specifically to the 24 NBE JSON/TXT regulatory sources and the architecture visible in your interrupted project, rather than giving you generic AI-agent instructions. That would be the version I'd actually use for the Account-B migration.
 
@@ -2967,7 +2967,7 @@ One important principle: the agent must never invent an NBE report field, endpoi
 
 Below is the master prompt I recommend.
 
-OB_AUTONOMOUS_MASTER_PROMPT.md
+02_OB_SYSTEM_SPECIFICATION.md
 # OB NBE REPORTING SYSTEM
 # AUTONOMOUS FULL-STACK ENGINEERING MASTER PROMPT
 
@@ -3093,30 +3093,30 @@ Create and continuously maintain a project-control directory:
 
 with at least:
 
-.ai/START_HERE.md
-.ai/PROJECT_MEMORY.md
-.ai/ARCHITECTURE.md
-.ai/SYSTEM_REQUIREMENTS.md
-.ai/SSOT.md
-.ai/REPORT_CATALOG.md
-.ai/DEPARTMENT_CATALOG.md
-.ai/RBAC_MATRIX.md
-.ai/WORKFLOW_MODEL.md
-.ai/SECURITY_MODEL.md
-.ai/AUDIT_MODEL.md
-.ai/API_CONTRACTS.md
-.ai/DATABASE_MODEL.md
-.ai/UI_UX_SPEC.md
-.ai/TASK_QUEUE.md
-.ai/IMPLEMENTATION_STATUS.md
-.ai/TEST_PLAN.md
-.ai/TEST_STATUS.md
-.ai/SECURITY_REVIEW.md
-.ai/KNOWN_ISSUES.md
-.ai/DECISIONS.md
-.ai/CHANGELOG.md
-.ai/RECOVERY.md
-.ai/COMPLETION_EVIDENCE.md
+.ai/00_START_HERE.md
+.ai/04_PROJECT_MEMORY.md
+.ai/06_ARCHITECTURE.md
+.ai/05_SYSTEM_REQUIREMENTS.md
+.ai/07_SSOT.md
+.ai/09_REPORT_CATALOG.md
+.ai/08_DEPARTMENT_CATALOG.md
+.ai/12_RBAC_MATRIX.md
+.ai/21_WORKFLOW_MODEL.md
+.ai/22_SECURITY_MODEL.md
+.ai/19_AUDITOR_ROLE_AND_AUDIT_WORKFLOW.md
+.ai/11_NBE_CONTRACT.md
+.ai/06_ARCHITECTURE.md
+.ai/17_UI_UX_RESPONSIVENESS_AUDIT_AND_ENHANCEMENT.md
+.ai/25_TASK_QUEUE.md
+.ai/13_CURRENT_IMPLEMENTATION_STATUS.md
+.ai/28_COMPLETION_EVIDENCE.md
+.ai/28_COMPLETION_EVIDENCE.md
+.ai/22_SECURITY_MODEL.md
+.ai/27_KNOWN_ISSUES.md
+.ai/24_DECISIONS.md
+.ai/14_CHANGELOG.md
+.ai/03_CONTINUATION_AND_RECOVERY.md
+.ai/28_COMPLETION_EVIDENCE.md
 
 These files are persistent engineering memory.
 
@@ -3128,14 +3128,14 @@ READ THE .ai DIRECTORY.
 
 At minimum read:
 
-START_HERE.md
-PROJECT_MEMORY.md
-ARCHITECTURE.md
-SYSTEM_REQUIREMENTS.md
-SSOT.md
-TASK_QUEUE.md
-IMPLEMENTATION_STATUS.md
-KNOWN_ISSUES.md
+00_START_HERE.md
+04_PROJECT_MEMORY.md
+06_ARCHITECTURE.md
+05_SYSTEM_REQUIREMENTS.md
+07_SSOT.md
+25_TASK_QUEUE.md
+13_CURRENT_IMPLEMENTATION_STATUS.md
+27_KNOWN_ISSUES.md
 
 After meaningful implementation:
 
@@ -3143,10 +3143,10 @@ UPDATE the appropriate files.
 
 Before ending a run:
 
-UPDATE TASK_QUEUE.md
-UPDATE IMPLEMENTATION_STATUS.md
-UPDATE PROJECT_MEMORY.md
-UPDATE RECOVERY.md
+UPDATE 25_TASK_QUEUE.md
+UPDATE 13_CURRENT_IMPLEMENTATION_STATUS.md
+UPDATE 04_PROJECT_MEMORY.md
+UPDATE 03_CONTINUATION_AND_RECOVERY.md
 
 The next agent/session must be able to continue without asking the
 user to explain what has already been done.
@@ -3289,10 +3289,10 @@ CONFIRMED information.
 
 Maintain this distinction in:
 
-.ai/SSOT.md
-.ai/REPORT_CATALOG.md
-.ai/DEPARTMENT_CATALOG.md
-.ai/DECISIONS.md
+.ai/07_SSOT.md
+.ai/09_REPORT_CATALOG.md
+.ai/08_DEPARTMENT_CATALOG.md
+.ai/24_DECISIONS.md
 
 ---
 
@@ -3357,7 +3357,7 @@ record it as unresolved rather than inventing it.
 
 Create:
 
-.ai/DEPARTMENT_CATALOG.md
+.ai/08_DEPARTMENT_CATALOG.md
 
 containing:
 
@@ -3719,7 +3719,7 @@ Never hide uncertainty.
 
 Create:
 
-.ai/REPORT_CATALOG.md
+.ai/09_REPORT_CATALOG.md
 
 with at least:
 
@@ -4849,7 +4849,7 @@ Never skip REGRESSION TEST after significant changes.
 
 Maintain:
 
-.ai/TASK_QUEUE.md
+.ai/25_TASK_QUEUE.md
 
 Use:
 
@@ -5037,7 +5037,7 @@ Completion evidence is recorded.
 
 Create:
 
-.ai/COMPLETION_EVIDENCE.md
+.ai/28_COMPLETION_EVIDENCE.md
 
 For every gate record:
 
@@ -5105,11 +5105,11 @@ If execution stops unexpectedly:
 
 The next session must:
 
-Read .ai/START_HERE.md
-Read .ai/PROJECT_MEMORY.md
-Read .ai/IMPLEMENTATION_STATUS.md
-Read .ai/TASK_QUEUE.md
-Read .ai/KNOWN_ISSUES.md
+Read .ai/00_START_HERE.md
+Read .ai/04_PROJECT_MEMORY.md
+Read .ai/13_CURRENT_IMPLEMENTATION_STATUS.md
+Read .ai/25_TASK_QUEUE.md
+Read .ai/27_KNOWN_ISSUES.md
 Inspect the actual repository
 Run the current test suite
 Identify the last incomplete task
@@ -5134,11 +5134,11 @@ Before termination:
 
 Save all code.
 Save all documentation.
-Update TASK_QUEUE.md.
-Update IMPLEMENTATION_STATUS.md.
-Update PROJECT_MEMORY.md.
-Update KNOWN_ISSUES.md.
-Update RECOVERY.md.
+Update 25_TASK_QUEUE.md.
+Update 13_CURRENT_IMPLEMENTATION_STATUS.md.
+Update 04_PROJECT_MEMORY.md.
+Update 27_KNOWN_ISSUES.md.
+Update 03_CONTINUATION_AND_RECOVERY.md.
 Record the exact next task.
 Record incomplete tests.
 Record known failures.
@@ -5154,29 +5154,29 @@ Whenever an architectural decision changes:
 
 update:
 
-.ai/ARCHITECTURE.md
-.ai/DECISIONS.md
-.ai/PROJECT_MEMORY.md
+.ai/06_ARCHITECTURE.md
+.ai/24_DECISIONS.md
+.ai/04_PROJECT_MEMORY.md
 
 Whenever a requirement changes:
 
 update:
 
-.ai/SYSTEM_REQUIREMENTS.md
+.ai/05_SYSTEM_REQUIREMENTS.md
 
 Whenever a report definition changes:
 
 update:
 
-.ai/REPORT_CATALOG.md
-.ai/SSOT.md
+.ai/09_REPORT_CATALOG.md
+.ai/07_SSOT.md
 
 Whenever permissions change:
 
 update:
 
-.ai/RBAC_MATRIX.md
-.ai/SECURITY_MODEL.md
+.ai/12_RBAC_MATRIX.md
+.ai/22_SECURITY_MODEL.md
 
 74. ENGINEERING JUDGMENT
 

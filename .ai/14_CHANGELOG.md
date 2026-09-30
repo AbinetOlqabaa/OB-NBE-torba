@@ -4,6 +4,87 @@ All notable changes and engineering enhancements for the Oromia Bank NBE Regulat
 
 ---
 
+## [1.9.1-phase0-ai-normalization] - 2026-09-30
+
+### Added
+- **Canonical Knowledge Base Map & Master AI Index (`.ai/00_START_HERE.md`)**:
+  - Ingested and indexed all 29 canonical engineering specifications (`00_` through `28_`).
+  - Defined explicit reading order, purpose, and trigger conditions for incoming AI agents.
+  - Formulated mandatory Account Migration and Quota Safety rules.
+- **Dedicated Continuation and Recovery Guide (`.ai/03_CONTINUATION_AND_RECOVERY.md`)**:
+  - Restored canonical quick verification commands and architectural layout map.
+- **Account Migration & Continuation Protocol (`.ai/20_ACCOUNT_MIGRATION_AND_CONTINUATION.md`)**:
+  - Consolidated multi-account handoff protocols, quota-safety discipline, and post-migration integrity rules.
+
+### Changed
+- **Standardized Canonical File Naming**:
+  - Renamed `02_OB_SYSTEM_SPECIFICATION.md` to `02_OB_SYSTEM_SPECIFICATION.md`.
+  - Renamed `01_MASTER_AUTONOMOUS_ENGINEER.md` to `01_MASTER_AUTONOMOUS_ENGINEER.md`.
+  - Upgraded `00_START_HERE.md` to canonical `00_START_HERE.md`.
+  - Standardized all 29 engineering documents with uniform two-digit numeric prefixes (`00_` to `28_`).
+- **Complete Reference Repair**:
+  - Repaired all internal Markdown cross-references across all `.ai/*.md` documents to use canonical numbered filenames.
+  - Eliminated broken and un-prefixed references.
+- **Duplicate & Redundant Document Elimination**:
+  - Merged unique content from unnumbered and partial duplicates (`14_CHANGELOG.md`, `13_CURRENT_IMPLEMENTATION_STATUS.md`, `13_CURRENT_IMPLEMENTATION_STATUS.md`, `20_ACCOUNT_MIGRATION_AND_CONTINUATION.md`, `03_CONTINUATION_AND_RECOVERY.md`, `20_ACCOUNT_MIGRATION_AND_CONTINUATION.md`) into their canonical counterparts.
+  - Removed all redundant unnumbered clones and 0-byte placeholder files.
+
+---
+
+## [1.9.1-phase0-ai-normalization] - 2026-09-30
+
+### Added
+- **Canonical Knowledge Base Map & Master AI Index (`.ai/00_START_HERE.md`)**:
+  - Ingested and indexed all 29 canonical engineering specifications (`00_` through `28_`).
+  - Defined explicit reading order, purpose, and trigger conditions for incoming AI agents.
+  - Formulated mandatory Account Migration and Quota Safety rules.
+- **Dedicated Continuation and Recovery Guide (`.ai/03_CONTINUATION_AND_RECOVERY.md`)**:
+  - Restored canonical quick verification commands and architectural layout map.
+- **Account Migration & Continuation Protocol (`.ai/20_ACCOUNT_MIGRATION_AND_CONTINUATION.md`)**:
+  - Consolidated multi-account handoff protocols, quota-safety discipline, and post-migration integrity rules.
+
+### Changed
+- **Standardized Canonical File Naming**:
+  - Renamed `02_OB_SYSTEM_SPECIFICATION.md` to `02_OB_SYSTEM_SPECIFICATION.md`.
+  - Renamed `01_MASTER_AUTONOMOUS_ENGINEER.md` to `01_MASTER_AUTONOMOUS_ENGINEER.md`.
+  - Upgraded `00_START_HERE.md` to canonical `00_START_HERE.md`.
+  - Standardized all 29 engineering documents with uniform two-digit numeric prefixes (`00_` to `28_`).
+- **Complete Reference Repair**:
+  - Repaired all internal Markdown cross-references across all `.ai/*.md` documents to use canonical numbered filenames.
+  - Eliminated broken and un-prefixed references.
+- **Duplicate & Redundant Document Elimination**:
+  - Merged unique content from unnumbered and partial duplicates (`14_CHANGELOG.md`, `13_CURRENT_IMPLEMENTATION_STATUS.md`, `13_CURRENT_IMPLEMENTATION_STATUS.md`, `20_ACCOUNT_MIGRATION_AND_CONTINUATION.md`, `03_CONTINUATION_AND_RECOVERY.md`, `20_ACCOUNT_MIGRATION_AND_CONTINUATION.md`) into their canonical counterparts.
+  - Removed all redundant unnumbered clones and 0-byte placeholder files.
+
+---
+
+## [1.9.1-phase0-ai-normalization] - 2026-09-30
+
+### Added
+- **Canonical Knowledge Base Map & Master AI Index ()**:
+  - Ingested and indexed all 29 canonical engineering specifications ( through ).
+  - Defined explicit reading order, purpose, and trigger conditions for AI agents.
+  - Formulated mandatory Account Migration and Quota Safety rules.
+- **Dedicated Continuation and Recovery Guide ()**:
+  - Restored canonical quick verification commands and architectural layout map.
+- **Account Migration & Continuation Protocol ()**:
+  - Consolidated multi-account handoff protocols, quota-safety discipline, and post-migration integrity rules.
+
+### Changed
+- **Standardized Canonical File Naming**:
+  - Renamed  to .
+  - Renamed  to .
+  - Upgraded  to canonical .
+  - Unified all 29 engineering documents with uniform two-digit numeric prefixes ( to ).
+- **Complete Reference Repair**:
+  - Repaired all internal Markdown cross-references across all  documents to use canonical numbered filenames.
+  - Eliminated broken and un-prefixed references.
+- **Duplicate & Redundant Document Elimination**:
+  - Merged unique content from unnumbered and partial duplicates (, , , , , ) into their canonical counterparts.
+  - Removed all redundant unnumbered clones and 0-byte placeholder files.
+
+---
+
 ## [1.9.0-phase5-final-verification-and-completion-gate] - 2026-09-29
 
 ### Added
@@ -65,9 +146,9 @@ All notable changes and engineering enhancements for the Oromia Bank NBE Regulat
 ## [1.7.0-phase3-auditor-ux-and-pagination] - 2026-09-29
 
 ### Added
-- **Design System Rule Injected into Master Prompts (`/.ai/02_MASTER_PROMPT.md`, `/.ai/MASTER_PROMPT.md`)**:
+- **Design System Rule Injected into Master Prompts (`/.ai/02_OB_SYSTEM_SPECIFICATION.md`, `/.ai/02_OB_SYSTEM_SPECIFICATION.md`)**:
   - Formal rule prohibiting page-specific overrides when solutions belong to shared design tokens, themes, components, or application shells.
-- **Account Migration Protocol (`/.ai/ACCOUNT_MIGRATION_PROTOCOL.md`)**:
+- **Account Migration Protocol (`/.ai/20_ACCOUNT_MIGRATION_AND_CONTINUATION.md`)**:
   - Permanent protocol guaranteeing self-contained project state reconstruction for subsequent AI Studio sessions.
 - **First-Class Auditor Workflow & Integration (`src/components/AuditorDashboard.tsx`)**:
   - Full adherence to the shared OB design system (zero arbitrary custom color tokens).
@@ -227,3 +308,44 @@ All notable changes and engineering enhancements for the Oromia Bank NBE Regulat
 - **Collapsible Development Test Reference UI**:
   - Added clean reference accordion on `LoginPage.tsx` displaying accounts and roles.
   - Provides "Use Email" filler (populates email only, preserving real password validation) and "Reset Seed Data" trigger.
+
+---
+
+## [1.1.0-ui-ux] - 2026-09-28
+
+### Added
+- **Dedicated Automated Responsive UI & Layout Test Suite** (`src/tests/responsive-ui-and-layout.test.ts`):
+  - 9 viewport classification matrix (Small Mobile 320px to Large Desktop 1920px).
+  - 16-component React export and inventory verification.
+  - Minimum 44px mobile touch target enforcement (`min-h-[44px]`, `min-w-[44px]`).
+  - Horizontal page overflow prevention testing (`overflow-x-auto`, `truncate`, `line-clamp`).
+  - Zero-pill compliance audit on static metadata.
+  - Multi-breakpoint navigation adaptation verification.
+  - Dynamic area table dual card/table view mode verification.
+  - Non-color status indicator audit (dual icon + text pairing for WCAG AA).
+- **Integrated into Root Test Runner** (`src/tests/run-all-tests.ts`):
+  - Now executes 8 complete test suites sequentially with 100% green verification.
+
+### Changed
+- **Zero-Pill Discipline Refinements (Frontend Design Constitution)**:
+  - `src/components/DynamicReportForm.tsx`: Replaced static pill capsules (`rounded-full`) in validation summary strips with clean unboxed metadata and subtle rounded tags (`rounded-md`).
+  - `src/App.tsx`: Replaced `rounded-full` badge in toast hardware verification notifications with clean `rounded-md` metadata tags.
+  - `src/components/AdminDashboard.tsx`: Cleaned tab count indicators from `rounded-full` to clean `rounded-md` indicators.
+  - `src/components/OfflineStorageModal.tsx`: Replaced `rounded-full` sync status tags with clean unboxed/rounded-md tags.
+  - `src/components/UserSettingsModal.tsx`: Replaced `rounded-full` authentication history count tag with clean `rounded-md` tag.
+  - `src/components/NbeHealthIndicator.tsx`: Updated status telemetry badge from `rounded-full` to `rounded-md`.
+  - `src/components/KeyboardShortcutsModal.tsx`: Updated badge tag from `rounded-full` to `rounded-md`.
+  - `src/components/OfflineStatusIndicator.tsx`: Updated sync counter from `rounded-full` to `rounded-md`.
+
+### Verified
+- `compile_applet`: Succeeded cleanly.
+- `lint_applet` (`npm run lint` / `tsc --noEmit`): Exited with 0 errors.
+- `npx tsx src/tests/run-all-tests.ts`: All 8 automated test suites passed 100% green.
+
+---
+
+## [1.0.0-audit] - 2026-09-28
+### Added
+- Comprehensive recovery assessment answering all 10 architectural inquiries.
+- Confirmation of Express/Node.js architecture and clarification of Django non-existence.
+- Verified test suites for core regulatory engines, RBAC, NBE simulator, biometrics, PDF generation, and IndexedDB storage.

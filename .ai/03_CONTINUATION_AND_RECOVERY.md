@@ -37,8 +37,8 @@ npm run build
 
 ## 3. Resumption Checklist
 If continuing development or adding new features:
-1. Inspect `.ai/COMPLETION_EVIDENCE.md` to review the verified gates.
-2. Check `.ai/TASK_QUEUE.md` for any remaining or newly requested tasks.
+1. Inspect `.ai/28_COMPLETION_EVIDENCE.md` to review the verified gates.
+2. Check `.ai/25_TASK_QUEUE.md` for any remaining or newly requested tasks.
 3. Make atomic, single-responsibility changes.
 4. Run `npx tsx src/tests/run-all-tests.ts` and `npm run lint` before committing work.
-5. Record changes in `.ai/CHANGELOG.md` and `.ai/PROJECT_MEMORY.md`.
+5. Record changes in `.ai/14_CHANGELOG.md` and `.ai/04_PROJECT_MEMORY.md`.
