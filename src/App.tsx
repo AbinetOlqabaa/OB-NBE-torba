@@ -715,9 +715,14 @@ export default function App() {
               submission={editingSubmission}
               currentUser={currentUser}
               readOnly={
+                currentUser.role !== 'MAKER' ||
                 editingSubmission.status === 'APPROVED' ||
                 editingSubmission.status === 'SENT' ||
-                currentUser.role === 'CHECKER'
+                editingSubmission.status === 'ARCHIVED' ||
+                editingSubmission.status === 'VOIDED' ||
+                editingSubmission.status === 'PENDING_CHECKER' ||
+                (editingSubmission.status !== 'DRAFT' &&
+                  editingSubmission.status !== 'CORRECTION_REQUIRED')
               }
               onBack={() => setEditingSubmission(null)}
               onSave={handleSaveDraft}

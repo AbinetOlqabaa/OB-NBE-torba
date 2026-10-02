@@ -4,6 +4,54 @@ All notable changes and engineering enhancements for the Oromia Bank NBE Regulat
 
 ---
 
+## [26.0.0-phase26-library-role-based-workflows-and-deletion-governance] - 2026-10-02
+
+### Added & Enhanced
+- **Phase 26: Library Role-Based Workflows and Deletion Governance (`MakerLibraryView.tsx`, `submissionService.ts`, `effectiveAccessEngine.ts`, `regulatory.ts`, `auditService.ts`, `server.ts`, `App.tsx`, `Sidebar.tsx`, `BottomNavigation.tsx`, `MobileBottomNav.tsx`, `phase26-library-role-based-workflows-and-deletion-governance.test.ts`)**:
+  - **Comprehensive Multi-Role Library Expansion (Requirement 1, 2, 3)**:
+    - **Checker Review Library & 4-Eyes Queue**:
+      - Displays strictly authorized departmental review records; cross-department isolation enforced at backend server query level.
+      - Integrated review action modal: 4-eyes principle inspection, Approve (`APPROVE`), Return for Correction (`REQUEST_CORRECTION`), and Reject (`REJECT`) with mandatory justification.
+      - Compliance Flagging: toggle flag status with reason, tracking `flagged`, `flagReason`, `flaggedBy`, and `flaggedAt`.
+      - Checker queries and notes: append review query notes (`CHECKER_QUERY`, `CORRECTION_NOTE`).
+      - Library access strictly forbids Checker from editing report figures or creating drafts.
+    - **Auditor Regulatory Repository & Dossiers**:
+      - Independent supervisory examination with universal bank-wide dossier inspection across all departments and report types.
+      - Dossier History & Event Trail Inspector: view snapshot history with version iterations, historical data snapshots, integrity hashes, review note threads, and immutable audit logs.
+      - Supervisory audit findings: append official supervisory audit notes (`AUDIT`).
+      - Operational mutation (editing drafts, creating returns, or deleting records) is strictly forbidden for Auditors (`ROLE_FORBIDDEN`).
+    - **Administrator Institutional Library & Governance**:
+      - Comprehensive institutional oversight across all banking returns.
+      - Governed lifecycle disposition: removal impact assessment, regulatory retention warnings, governed archival (`ARCHIVE`) and voiding (`VOID`) preserving historical snapshots and audit trail.
+      - Destruction of submitted statutory returns is strictly prohibited; unsubmitted drafts can be purged under administrative authorization.
+  - **Effective Access Engine Integration (Requirement 4)**:
+    - Extended `effectiveAccessEngine.evaluateSubmissionAccess()` to enforce submission-level permissions across actions: `VIEW`, `CREATE_DRAFT`, `EDIT_DRAFT`, `DELETE_DRAFT`, `REVIEW`, `APPROVE`, `REJECT`, `REQUEST_CORRECTION`, `EXPORT_XLSX`, `AUDIT_INSPECT`, `INSPECT_HISTORY`, `COMMENT`, `FLAG`, `ADMIN_ARCHIVE`, `ADMIN_VOID`.
+    - Enforces home department matching, M:N linked departments, direct user report assignments, active special access grants, and account active status.
+    - Special access grants dynamically expand access during valid window; expired grants are strictly rejected.
+  - **Server-Side Permission Filtering & Protection Against Leakage (Requirement 5 & 10)**:
+    - Backend `submissionService.queryLibrary()` filters authorized records before computing counts, statistics, search matching, and pagination.
+    - Stats bar (`all`, `draft`, `inProgress`, `returned`, `submitted`, `reusedCopy`, `archived`, `voided`) reflects only authorized records.
+    - Keyword search operates strictly within the authorized dataset (zero search leakage across departments).
+    - Direct record lookup `GET /api/regulatory/submissions/:id` enforces cross-department authorization (`403 Forbidden` on unauthorized ID access).
+  - **Maker Submitted Record Immutability & Deletion Protections (Requirement 6)**:
+    - Makers cannot delete submitted reports (`PENDING_CHECKER`, `APPROVED`, `SENT`, `SENDING`, `ARCHIVED`, `VOIDED`).
+    - Backend throws `INVALID_WORKFLOW_STATE` error under NBE Directive BSD/03/2020.
+    - Makers can delete only unsubmitted drafts they created or within their assigned department.
+  - **Governed Administrative Archiving & Voiding (Requirements 7 & 8)**:
+    - Under NBE Directive BSD/03/2020 and Banking Supervision Record Retention Mandates, submitted statutory returns cannot be hard-deleted.
+    - `getRemovalImpactAssessment()` provides impact analysis, snapshot counts, audit counts, and regulatory retention warning.
+    - Governed disposition (`adminGovernedRemoveSubmission`) supports `ARCHIVE` and `VOID` actions.
+    - Requires ADMIN role, explicit confirmation checkbox (`confirmed: true`), and detailed regulatory justification (minimum 10 characters).
+    - Preserves all historical snapshots, dynamic rows, and captures authoritative `ADMIN_ARCHIVE_SUBMISSION` or `ADMIN_VOID_SUBMISSION` audit logs.
+  - **Permission Distinction Per Role (Requirement 9)**:
+    - Strict role boundaries across Maker, Checker, Auditor, and Admin for all operations.
+    - Form view mode in `App.tsx` strictly sets `readOnly` for non-makers and non-draft states.
+  - **Automated Acceptance Test Coverage (Requirement 10)**:
+    - Added `src/tests/phase26-library-role-based-workflows-and-deletion-governance.test.ts` with 11 comprehensive test sections and 40+ assertions, integrated into `run-all-tests.ts`.
+    - All tests passing with 100% success rate.
+
+---
+
 ## [25.0.0-phase25-library-core-architecture-and-maker-library] - 2026-10-02
 
 ### Added & Enhanced

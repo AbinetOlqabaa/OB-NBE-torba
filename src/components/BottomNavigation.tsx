@@ -48,6 +48,12 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
             badge: pendingUsersCount > 0 ? pendingUsersCount : null,
           },
           {
+            id: 'LIBRARY' as ViewTab,
+            label: 'Library',
+            icon: BookOpen,
+            badge: null,
+          },
+          {
             id: 'CHECKER_INBOX' as ViewTab,
             label: 'Checker',
             icon: Inbox,
@@ -57,12 +63,6 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
             id: 'MAKER_WORKSPACE' as ViewTab,
             label: 'Maker',
             icon: FileText,
-            badge: null,
-          },
-          {
-            id: 'NBE_SIMULATOR' as ViewTab,
-            label: 'Simulator',
-            icon: Send,
             badge: null,
           },
         ];
@@ -75,6 +75,12 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
             badge: pendingCheckerCount > 0 ? pendingCheckerCount : null,
           },
           {
+            id: 'LIBRARY' as ViewTab,
+            label: 'Library',
+            icon: BookOpen,
+            badge: null,
+          },
+          {
             id: 'NBE_SIMULATOR' as ViewTab,
             label: 'Simulator',
             icon: Send,
@@ -84,12 +90,6 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
             id: 'PHASE2_SSOT' as ViewTab,
             label: 'SSOT',
             icon: Database,
-            badge: null,
-          },
-          {
-            id: 'AUDIT_TRAIL' as ViewTab,
-            label: 'Audit',
-            icon: History,
             badge: null,
           },
         ];
@@ -102,6 +102,12 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
             badge: null,
           },
           {
+            id: 'LIBRARY' as ViewTab,
+            label: 'Library',
+            icon: BookOpen,
+            badge: null,
+          },
+          {
             id: 'AUDIT_TRAIL' as ViewTab,
             label: 'Audit',
             icon: History,
@@ -111,12 +117,6 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
             id: 'PHASE2_SSOT' as ViewTab,
             label: 'SSOT',
             icon: Database,
-            badge: null,
-          },
-          {
-            id: 'DOCUMENTATION' as ViewTab,
-            label: 'Specs',
-            icon: HelpCircle,
             badge: null,
           },
         ];

@@ -695,14 +695,146 @@ app.delete('/api/regulatory/submissions/:id', (req, res) => {
   }
 });
 
-// Get submission by ID
+// Get submission by ID (with authoritative cross-department isolation)
 app.get('/api/regulatory/submissions/:id', (req, res) => {
-  const sub = submissionService.getById(req.params.id);
-  if (!sub) {
-    res.status(404).json({ error: 'Submission not found' });
+  const { userEmail, userId } = req.query as any;
+  let activeUser = req.body && req.body.user ? req.body.user : null;
+  if (!activeUser) {
+    if (userEmail) activeUser = userService.getByEmail(userEmail as string);
+    else if (userId) activeUser = userService.getById(userId as string);
+  }
+  if (!activeUser) activeUser = DEMO_USERS[0];
+
+  try {
+    const sub = submissionService.getAuthorizedSubmission(req.params.id, activeUser);
+    res.json(sub);
+  } catch (err: any) {
+    const status = err.message.includes('not found') ? 404 : 403;
+    res.status(status).json({ error: err.message });
+  }
+});
+
+// Phase 26: Removal Impact Assessment for Admin (Requirement 8)
+app.get('/api/regulatory/submissions/:id/removal-impact', (req, res) => {
+  const { userEmail, userId } = req.query as any;
+  let activeUser = req.body && req.body.user ? req.body.user : null;
+  if (!activeUser) {
+    if (userEmail) activeUser = userService.getByEmail(userEmail as string);
+    else if (userId) activeUser = userService.getById(userId as string);
+  }
+  if (!activeUser) activeUser = DEMO_USERS[0];
+
+  try {
+    const assessment = submissionService.getRemovalImpactAssessment(req.params.id, activeUser);
+    res.json(assessment);
+  } catch (err: any) {
+    const status = err.message.includes('not found')
+      ? 404
+      : getAuthOrClientStatusCode(err.message);
+    res.status(status).json({ error: err.message });
+  }
+});
+
+// Phase 26: Admin Governed Removal / Archiving / Voiding (Requirements 7 & 8)
+app.post('/api/regulatory/submissions/:id/admin-remove', (req, res) => {
+  const { action, reason, confirmed, user } = req.body || {};
+  const queryUser = req.query.userEmail
+    ? userService.getByEmail(req.query.userEmail as string)
+    : req.query.userId
+    ? userService.getById(req.query.userId as string)
+    : null;
+  const activeUser = user || queryUser || DEMO_USERS[0];
+
+  try {
+    const result = submissionService.adminGovernedRemoveSubmission(req.params.id, activeUser, {
+      action,
+      reason,
+      confirmed: Boolean(confirmed),
+    });
+    res.json(result);
+  } catch (err: any) {
+    const status = err.message.includes('not found')
+      ? 404
+      : getAuthOrClientStatusCode(err.message);
+    res.status(status).json({ error: err.message });
+  }
+});
+
+// Phase 26: Flag Submission for Review (Requirement 1)
+app.post('/api/regulatory/submissions/:id/flag', (req, res) => {
+  const { reason, flag, user } = req.body || {};
+  const queryUser = req.query.userEmail
+    ? userService.getByEmail(req.query.userEmail as string)
+    : req.query.userId
+    ? userService.getById(req.query.userId as string)
+    : null;
+  const activeUser = user || queryUser || DEMO_USERS[0];
+
+  try {
+    const updated = submissionService.flagSubmission(
+      req.params.id,
+      activeUser,
+      reason || 'Flagged for compliance review',
+      flag !== undefined ? Boolean(flag) : true
+    );
+    res.json(updated);
+  } catch (err: any) {
+    const status = err.message.includes('not found')
+      ? 404
+      : getAuthOrClientStatusCode(err.message);
+    res.status(status).json({ error: err.message });
+  }
+});
+
+// Phase 26: Add Review/Audit Comment (Requirements 1 & 2)
+app.post('/api/regulatory/submissions/:id/comment', (req, res) => {
+  const { text, category, user } = req.body || {};
+  const queryUser = req.query.userEmail
+    ? userService.getByEmail(req.query.userEmail as string)
+    : req.query.userId
+    ? userService.getById(req.query.userId as string)
+    : null;
+  const activeUser = user || queryUser || DEMO_USERS[0];
+
+  if (!text || !text.trim()) {
+    res.status(400).json({ error: 'Comment text is required.' });
     return;
   }
-  res.json(sub);
+
+  try {
+    const updated = submissionService.addSubmissionComment(
+      req.params.id,
+      activeUser,
+      text.trim(),
+      category || 'GENERAL'
+    );
+    res.json(updated);
+  } catch (err: any) {
+    const status = err.message.includes('not found')
+      ? 404
+      : getAuthOrClientStatusCode(err.message);
+    res.status(status).json({ error: err.message });
+  }
+});
+
+// Phase 26: Dossier Audit Events Inspection (Requirement 2)
+app.get('/api/regulatory/submissions/:id/audit-events', (req, res) => {
+  const { userEmail, userId } = req.query as any;
+  let activeUser = req.body && req.body.user ? req.body.user : null;
+  if (!activeUser) {
+    if (userEmail) activeUser = userService.getByEmail(userEmail as string);
+    else if (userId) activeUser = userService.getById(userId as string);
+  }
+  if (!activeUser) activeUser = DEMO_USERS[0];
+
+  try {
+    submissionService.getAuthorizedSubmission(req.params.id, activeUser);
+    const events = auditService.query({ entityId: req.params.id });
+    res.json({ events });
+  } catch (err: any) {
+    const status = err.message.includes('not found') ? 404 : 403;
+    res.status(status).json({ error: err.message });
+  }
 });
 
 // Create new report draft

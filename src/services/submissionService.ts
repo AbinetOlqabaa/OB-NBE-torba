@@ -16,6 +16,8 @@ import type {
   LibraryFilterOptions,
   LibraryQueryResult,
   LibraryLifecycleState,
+  RemovalImpactAssessment,
+  GovernedRemovalResult,
 } from '../types/regulatory.ts';
 import {
   deriveLibraryLifecycleState,
@@ -1648,6 +1650,18 @@ class SubmissionServiceClass {
     return this.updateDraft(id, targetSnapshot.values, targetSnapshot.dynamicRows, user);
   }
 
+  public getAuthorizedSubmission(id: string, user: UserSession): ReportSubmission {
+    const sub = this.submissions.get(id);
+    if (!sub) {
+      throw new Error(`Submission not found: ${id}`);
+    }
+    const evalResult = effectiveAccessEngine.evaluateSubmissionAccess(user, sub, 'VIEW');
+    if (!evalResult.allowed) {
+      throw new Error(`Forbidden: ${evalResult.reason}`);
+    }
+    return sub;
+  }
+
   public deleteSubmission(id: string, user: UserSession): boolean {
     const sub = this.submissions.get(id);
     if (!sub) {
@@ -1655,12 +1669,12 @@ class SubmissionServiceClass {
     }
 
     // Evaluate effective access engine rules
-    const evalResult = effectiveAccessEngine.evaluateAccess(user, sub.reportKey, 'DELETE_DRAFT', sub);
+    const evalResult = effectiveAccessEngine.evaluateSubmissionAccess(user, sub, 'DELETE_DRAFT');
     if (!evalResult.allowed) {
       throw new Error(`Forbidden: ${evalResult.reason}`);
     }
 
-    // Absolute prohibition: Submitted records must never be deleted under any circumstances
+    // Absolute prohibition: Submitted records must never be hard-deleted under any circumstances (Requirement 6, 7)
     const isSubmitted =
       isFinalSubmittedStatus(sub.status) ||
       sub.status === 'PENDING_CHECKER' ||
@@ -1689,9 +1703,359 @@ class SubmissionServiceClass {
   }
 
   /**
-   * Authoritative Library Query Engine (Requirement 1, 2, 7, 10)
-   * Enforces backend server-side permission filtering across ownership, departments,
-   * report types, and special access grants.
+   * Phase 26: Calculates administrative removal impact and generates regulatory warning.
+   * Enforces Requirement 8: "Any destructive Admin action requires authorization, impact warning, explicit confirmation and audit logging."
+   */
+  public getRemovalImpactAssessment(id: string, user: UserSession): RemovalImpactAssessment {
+    const sub = this.submissions.get(id);
+    if (!sub) {
+      throw new Error(`Submission not found: ${id}`);
+    }
+    if (user.role !== 'ADMIN') {
+      throw new Error('Forbidden: Only Administrators can assess regulatory removal impact.');
+    }
+
+    const report = getReportByKey(sub.reportKey);
+    const reportTitle = report?.Title || sub.reportKey;
+    const lState = deriveLibraryLifecycleState(sub);
+    const isSubmitted =
+      isFinalSubmittedStatus(sub.status) ||
+      sub.status === 'PENDING_CHECKER' ||
+      sub.status === 'APPROVED' ||
+      sub.status === 'SENT';
+
+    const snapshotsCount = (sub.historicalSnapshots || []).length;
+    const relatedAudit = auditService.query({ entityId: id });
+    const auditCount = relatedAudit.length;
+
+    const regulatoryWarning = isSubmitted
+      ? `REGULATORY RETENTION NOTICE: Return ${sub.reportKey} (v${sub.version}, status: ${sub.status}) is a submitted statutory dossier. Under NBE Directive BSD/03/2020 and Banking Supervision Record Retention Mandates, submitted regulatory records CANNOT be destroyed. Governed archiving or voiding will retain all ${snapshotsCount} historical snapshots, formulas, data rows, and audit trails while retiring the dossier from active operational workflows.`
+      : `UNCOMMITTED DRAFT WARNING: Return ${sub.reportKey} is an unsubmitted draft. Permanent deletion will discard all uncommitted form fields and dynamic rows. An authoritative audit entry will be logged.`;
+
+    return {
+      submissionId: sub.id,
+      reportKey: sub.reportKey,
+      reportTitle,
+      department: sub.department || 'Prudential Reporting',
+      status: sub.status,
+      lifecycleState: lState,
+      version: sub.version,
+      nbeReferenceNumber: sub.nbeReferenceNumber,
+      isSubmittedRecord: isSubmitted,
+      canHardDelete: !isSubmitted,
+      governedActionRequired: isSubmitted ? 'GOVERNED_ARCHIVE_VOID' : 'HARD_DELETE_DRAFT',
+      regulatoryWarning,
+      affectedSnapshotsCount: snapshotsCount,
+      affectedAuditEntriesCount: auditCount,
+      confirmedRequired: true,
+      minReasonLength: 10,
+    };
+  }
+
+  /**
+   * Phase 26: Governed Administrative Record Removal & Archiving Engine
+   * Requirements 7 & 8:
+   * "If Admin is authorized to remove submitted records, prefer archive/void/soft-delete where regulatory retention requires it. Never silently destroy regulatory history."
+   * "Any destructive Admin action requires authorization, impact warning, explicit confirmation and audit logging."
+   */
+  public adminGovernedRemoveSubmission(
+    id: string,
+    user: UserSession,
+    options: { action: 'ARCHIVE' | 'VOID' | 'DELETE_DRAFT'; reason: string; confirmed: boolean }
+  ): GovernedRemovalResult {
+    const sub = this.submissions.get(id);
+    if (!sub) {
+      throw new Error(`Submission not found: ${id}`);
+    }
+
+    // Role verification
+    if (user.role !== 'ADMIN') {
+      throw new Error('Forbidden: Only Administrator can perform governed removal or archiving.');
+    }
+
+    // Confirmation verification
+    if (!options.confirmed) {
+      throw new Error('Explicit confirmation is required for governed administrative removal.');
+    }
+
+    // Justification verification (min 10 chars)
+    if (!options.reason || options.reason.trim().length < 10) {
+      throw new Error(
+        'A detailed regulatory justification of at least 10 characters is mandatory for administrative removal.'
+      );
+    }
+
+    const isSubmitted =
+      isFinalSubmittedStatus(sub.status) ||
+      sub.status === 'PENDING_CHECKER' ||
+      sub.status === 'APPROVED' ||
+      sub.status === 'SENT';
+
+    const now = new Date().toISOString();
+    const reasonText = options.reason.trim();
+
+    // If submitted record, HARD DELETE is strictly forbidden
+    if (isSubmitted) {
+      if (options.action === 'DELETE_DRAFT') {
+        throw new Error(
+          `Cannot hard-delete submitted regulatory submission ${id}. Under NBE Directive BSD/03/2020, submitted reports are permanent immutable records. Governed archiving or voiding must be used to preserve regulatory history.`
+        );
+      }
+
+      const targetStatus: SubmissionStatus = options.action === 'ARCHIVE' ? 'ARCHIVED' : 'VOIDED';
+      const prevStatus = sub.status;
+
+      // Capture archival snapshot
+      const valuesSnapshot = JSON.parse(JSON.stringify(sub.values || {}));
+      const dynamicSnapshot = JSON.parse(JSON.stringify(sub.dynamicRows || {}));
+      const tmpl =
+        sub.templateSnapshot || this.createTemplateSnapshot(this.getEffectiveTemplate(sub));
+      const integrityHash = this.computeIntegrityHash({
+        id: sub.id,
+        reportKey: sub.reportKey,
+        version: sub.version,
+        templateVersion: sub.templateVersion || 1,
+        values: valuesSnapshot,
+        status: targetStatus,
+      });
+
+      const archiveSnapshot: SubmissionSnapshot = {
+        snapshotId: `snap_${sub.id}_v${sub.version}_${targetStatus.toLowerCase()}_${Date.now()}`,
+        version: sub.version,
+        templateVersion: sub.templateVersion || 1,
+        dataVersion: sub.dataVersion || sub.version,
+        timestamp: now,
+        status: targetStatus,
+        capturedBy: user.name,
+        capturedByRole: user.role,
+        reason: `${targetStatus} by Administrator: ${reasonText}`,
+        values: valuesSnapshot,
+        dynamicRows: dynamicSnapshot,
+        templateSnapshot: tmpl,
+        structuralHash: sub.structuralHash,
+        integrityHash,
+      };
+
+      const updatedSub: ReportSubmission = {
+        ...sub,
+        status: targetStatus,
+        updatedAt: now,
+        isArchived: options.action === 'ARCHIVE',
+        archivedAt: options.action === 'ARCHIVE' ? now : sub.archivedAt,
+        archivedBy: options.action === 'ARCHIVE' ? user.id : sub.archivedBy,
+        archivedByName: options.action === 'ARCHIVE' ? user.name : sub.archivedByName,
+        archiveReason: options.action === 'ARCHIVE' ? reasonText : sub.archiveReason,
+        isVoided: options.action === 'VOID',
+        voidedAt: options.action === 'VOID' ? now : sub.voidedAt,
+        voidedBy: options.action === 'VOID' ? user.id : sub.voidedBy,
+        voidReason: options.action === 'VOID' ? reasonText : sub.voidReason,
+        historicalSnapshots: [...(sub.historicalSnapshots || []), archiveSnapshot],
+        comments: [
+          ...(sub.comments || []),
+          {
+            id: 'comm_' + Date.now(),
+            userId: user.id,
+            userName: user.name,
+            userRole: user.role as any,
+            comment: `Governed administrative action: ${targetStatus} (Previous status: ${prevStatus}). Justification: ${reasonText}`,
+            action: targetStatus as any,
+            timestamp: now,
+          },
+        ],
+      };
+
+      this.submissions.set(id, updatedSub);
+      indexedDbStorage.saveDraft(updatedSub).catch(() => {});
+
+      const auditAction =
+        options.action === 'ARCHIVE' ? 'ADMIN_ARCHIVE_SUBMISSION' : 'ADMIN_VOID_SUBMISSION';
+      const auditLog = auditService.log({
+        actorId: user.id,
+        actorName: user.name,
+        actorRole: 'ADMIN',
+        action: auditAction as any,
+        entityType: 'REPORT_SUBMISSION',
+        entityId: id,
+        correlationId: 'corr_gov_rem_' + id,
+        details: `Administrator ${user.name} governed ${options.action.toLowerCase()} on submitted report ${sub.reportKey} (v${sub.version}, NBE Ref: ${sub.nbeReferenceNumber || 'N/A'}). Justification: ${reasonText}`,
+      });
+
+      try {
+        realtimeSsotEngine.publishEvent({
+          eventType: 'WORKFLOW_STATUS_CHANGED',
+          action: targetStatus,
+          domain: 'WORKFLOW',
+          entityId: id,
+          topic: 'WORKFLOWS',
+          actor: { id: user.id, name: user.name, role: user.role },
+          summary: `Report ${sub.reportKey} ${targetStatus} by Administrator ${user.name}`,
+          payload: {
+            submissionId: id,
+            reportKey: sub.reportKey,
+            status: targetStatus,
+            reason: reasonText,
+          },
+        });
+      } catch (_) {}
+
+      return {
+        success: true,
+        action: options.action,
+        submissionId: id,
+        reportKey: sub.reportKey,
+        status: targetStatus,
+        message: `Submission ${id} successfully marked as ${targetStatus}. Full regulatory history and snapshots permanently retained.`,
+        regulatoryAuditId: auditLog.id,
+        preservedSnapshotsCount: (updatedSub.historicalSnapshots || []).length,
+      };
+    } else {
+      // Unsubmitted draft deletion
+      this.submissions.delete(id);
+      indexedDbStorage.deleteDraft(id).catch(() => {});
+
+      const auditLog = auditService.log({
+        actorId: user.id,
+        actorName: user.name,
+        actorRole: 'ADMIN',
+        action: 'ADMIN_DELETE_DRAFT' as any,
+        entityType: 'REPORT_SUBMISSION',
+        entityId: id,
+        correlationId: 'corr_del_draft_' + id,
+        details: `Administrator ${user.name} removed unsubmitted draft ${sub.reportKey} (v${sub.version}). Justification: ${reasonText}`,
+      });
+
+      return {
+        success: true,
+        action: 'DELETE_DRAFT',
+        submissionId: id,
+        reportKey: sub.reportKey,
+        status: 'DRAFT',
+        message: `Unsubmitted draft ${id} permanently removed by Administrator.`,
+        regulatoryAuditId: auditLog.id,
+        preservedSnapshotsCount: 0,
+      };
+    }
+  }
+
+  /**
+   * Phase 26: Flag/Unflag review record with comment and audit logging.
+   * Requirement 1: "Checker Library: show only authorized review records and provide view/review/comment/flag/request-correction/approve actions"
+   */
+  public flagSubmission(
+    id: string,
+    user: UserSession,
+    reason: string,
+    flag: boolean = true
+  ): ReportSubmission {
+    const sub = this.submissions.get(id);
+    if (!sub) throw new Error(`Submission not found: ${id}`);
+
+    // Access check: Checker (within review scope), Auditor, Admin
+    const evalResult = effectiveAccessEngine.evaluateSubmissionAccess(user, sub, 'FLAG');
+    if (!evalResult.allowed) {
+      throw new Error(`Flag denied: ${evalResult.reason}`);
+    }
+
+    const now = new Date().toISOString();
+    const updatedSub: ReportSubmission = {
+      ...sub,
+      flagged: flag,
+      flagReason: flag ? reason : undefined,
+      flaggedBy: flag ? user.name : undefined,
+      flaggedAt: flag ? now : undefined,
+      comments: [
+        ...(sub.comments || []),
+        {
+          id: 'comm_' + Date.now(),
+          userId: user.id,
+          userName: user.name,
+          userRole: user.role as any,
+          comment: flag
+            ? `[FLAGGED FOR ATTENTION] Reason: ${reason}`
+            : `[FLAG CLEARED] Reason: ${reason}`,
+          action: 'FLAG' as any,
+          timestamp: now,
+        },
+      ],
+      updatedAt: now,
+    };
+
+    this.submissions.set(id, updatedSub);
+    indexedDbStorage.saveDraft(updatedSub).catch(() => {});
+
+    auditService.log({
+      actorId: user.id,
+      actorName: user.name,
+      actorRole: user.role,
+      action: (flag ? 'FLAG_SUBMISSION' : 'UNFLAG_SUBMISSION') as any,
+      entityType: 'REPORT_SUBMISSION',
+      entityId: id,
+      correlationId: 'corr_flag_' + id,
+      details: `${user.role} ${user.name} ${flag ? 'flagged' : 'unflagged'} submission ${sub.reportKey}. Notes: ${reason}`,
+    });
+
+    return updatedSub;
+  }
+
+  /**
+   * Phase 26: Add review/audit comment to submission.
+   */
+  public addSubmissionComment(
+    id: string,
+    user: UserSession,
+    commentText: string,
+    category: 'GENERAL' | 'AUDIT' | 'CHECKER_QUERY' | 'CORRECTION_NOTE' = 'GENERAL'
+  ): ReportSubmission {
+    const sub = this.submissions.get(id);
+    if (!sub) throw new Error(`Submission not found: ${id}`);
+
+    const evalResult = effectiveAccessEngine.evaluateSubmissionAccess(user, sub, 'COMMENT');
+    if (!evalResult.allowed) {
+      throw new Error(`Comment denied: ${evalResult.reason}`);
+    }
+
+    const now = new Date().toISOString();
+    const updatedSub: ReportSubmission = {
+      ...sub,
+      comments: [
+        ...(sub.comments || []),
+        {
+          id: 'comm_' + Date.now(),
+          userId: user.id,
+          userName: user.name,
+          userRole: user.role as any,
+          comment: `[${category}] ${commentText}`,
+          action: 'COMMENT' as any,
+          timestamp: now,
+        },
+      ],
+      updatedAt: now,
+    };
+
+    this.submissions.set(id, updatedSub);
+    indexedDbStorage.saveDraft(updatedSub).catch(() => {});
+
+    auditService.log({
+      actorId: user.id,
+      actorName: user.name,
+      actorRole: user.role,
+      action: 'ADD_COMMENT' as any,
+      entityType: 'REPORT_SUBMISSION',
+      entityId: id,
+      correlationId: 'corr_comment_' + id,
+      details: `${user.role} ${user.name} commented on ${sub.reportKey} [${category}]: ${commentText}`,
+    });
+
+    return updatedSub;
+  }
+
+  /**
+   * Authoritative Library Query Engine (Requirement 1, 2, 4, 5, 7, 9, 10)
+   * Enforces backend server-side permission filtering across all 4 roles:
+   * - MAKER: ownership, department boundary, report types, special access grants
+   * - CHECKER: authorized review records, department matching, linked depts, special access
+   * - AUDITOR: institutional read-only inspection visibility
+   * - ADMIN: comprehensive institutional monitoring & governed lifecycle oversight
    */
   public queryLibrary(user: UserSession, options: LibraryFilterOptions = {}): LibraryQueryResult {
     const {
@@ -1708,7 +2072,7 @@ class SubmissionServiceClass {
       pageSize = 10,
     } = options;
 
-    // 1. Authoritative Backend Access Control (Requirement 10)
+    // 1. Authoritative Backend Access Control (Requirement 4, 5, 10)
     // Never fetch all records and hide unauthorized records only in the frontend.
     const all = this.getAll();
     let authorized: ReportSubmission[] = [];
@@ -1718,27 +2082,100 @@ class SubmissionServiceClass {
       authorized = all;
     } else if (user.role === 'MAKER') {
       // Maker ONLY sees records within their authorized scope:
-      // Allowed report types (home dept + M:N linked + special access)
+      // Allowed report types (home dept + M:N linked + direct assignment + special access)
       const allowedKeys = new Set(userService.getAllowedReportKeysForUser(user));
-      const userDept = (user.department || '').toLowerCase();
+      const userDept = (user.department || '').trim().toLowerCase();
 
       authorized = all.filter((s) => {
         // Must be an authorized report type
         if (!allowedKeys.has(s.reportKey)) return false;
-        // Must either be owned by the user, or belong to user's department, or covered by special access
+        // Must either be owned by the user, or belong to user's department, or covered by active special access
         const isOwner = s.makerId === user.id;
-        const isDept = s.department && s.department.toLowerCase() === userDept;
-        const hasSpecial = user.specialAccessGrants?.some(
-          (g) =>
-            g.reportKey === s.reportKey ||
-            (g.department && g.department.toLowerCase() === s.department?.toLowerCase())
-        );
+        const isDept = s.department && s.department.trim().toLowerCase() === userDept;
+        const hasSpecial = user.specialAccessGrants?.some((g) => {
+          const { active } = effectiveAccessEngine.isGrantActive(g);
+          if (!active) return false;
+          if (g.scope === 'ALL_REPORTS') return true;
+          if (g.reportKey && g.reportKey.toLowerCase() === s.reportKey.toLowerCase()) return true;
+          if (
+            g.department &&
+            s.department &&
+            g.department.toLowerCase() === s.department.toLowerCase()
+          )
+            return true;
+          if (
+            Array.isArray(g.departments) &&
+            s.department &&
+            g.departments.some((d) => d.toLowerCase() === s.department!.toLowerCase())
+          )
+            return true;
+          return false;
+        });
         return isOwner || isDept || hasSpecial;
       });
     } else if (user.role === 'CHECKER') {
-      const userDept = (user.department || '').toLowerCase();
+      // Checker ONLY sees authorized review records within Checker's authorized scope
+      const userDept = (user.department || '').trim().toLowerCase();
+
       authorized = all.filter((s) => {
-        return (s.department && s.department.toLowerCase() === userDept) || user.role === 'ADMIN';
+        const report = getReportByKey(s.reportKey);
+        const ssotReport = configService.getReportDefinition(s.reportKey);
+        const defaultDept = ssotReport?.defaultDepartmentId
+          ? configService.getDepartmentById(ssotReport.defaultDepartmentId)
+          : null;
+        const reportPrimaryDept = (
+          s.department ||
+          report?.department ||
+          defaultDept?.name ||
+          getDepartmentForReport(s.reportKey) ||
+          ''
+        )
+          .trim()
+          .toLowerCase();
+
+        const linkedDepts = departmentService.getDepartmentsForReport(s.reportKey);
+        const configLinkedDepts = (ssotReport?.departmentIds || []).map((id) => {
+          const d = configService.getDepartmentById(id);
+          return (d ? d.name : id).trim().toLowerCase();
+        });
+        const isHomeDept = Boolean(
+          userDept &&
+            (userDept === reportPrimaryDept ||
+              (s.department && userDept === s.department.toLowerCase()))
+        );
+        const isLinkedDept = Boolean(
+          userDept &&
+            (linkedDepts.some((d) => d.toLowerCase() === userDept) ||
+              configLinkedDepts.includes(userDept))
+        );
+        const directAssignments = effectiveAccessEngine.getUserDirectReportAssignments(user.id);
+        const isDirectAssignment = directAssignments.includes(s.reportKey);
+
+        const hasSpecial = user.specialAccessGrants?.some((g) => {
+          const { active } = effectiveAccessEngine.isGrantActive(g);
+          if (!active) return false;
+          if (g.scope === 'ALL_REPORTS') return true;
+          if (g.reportKey && g.reportKey.toLowerCase() === s.reportKey.toLowerCase()) return true;
+          if (
+            g.department &&
+            (g.department.toLowerCase() === reportPrimaryDept ||
+              (s.department && g.department.toLowerCase() === s.department.toLowerCase()))
+          )
+            return true;
+          if (
+            Array.isArray(g.departments) &&
+            g.departments.some(
+              (d) =>
+                d.toLowerCase() === reportPrimaryDept ||
+                (s.department && d.toLowerCase() === s.department.toLowerCase())
+            )
+          )
+            return true;
+          return false;
+        });
+
+        const hasAuthority = isHomeDept || isLinkedDept || isDirectAssignment || hasSpecial;
+        return hasAuthority;
       });
     } else {
       authorized = [];
@@ -1752,6 +2189,8 @@ class SubmissionServiceClass {
       returned: 0,
       submitted: 0,
       reusedCopy: 0,
+      archived: 0,
+      voided: 0,
     };
 
     for (const sub of authorized) {
@@ -1761,9 +2200,11 @@ class SubmissionServiceClass {
       else if (lState === 'RETURNED') stats.returned++;
       else if (lState === 'SUBMITTED') stats.submitted++;
       else if (lState === 'REUSED_COPY') stats.reusedCopy++;
+      else if (lState === 'ARCHIVED') stats.archived++;
+      else if (lState === 'VOIDED') stats.voided++;
     }
 
-    // 3. Filter by search query
+    // 3. Filter by search query (server-side, operates strictly on authorized records)
     let filtered = authorized;
     const q = search.trim().toLowerCase();
     if (q) {
