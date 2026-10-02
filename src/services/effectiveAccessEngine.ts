@@ -25,6 +25,7 @@ export type AccessAction =
   | 'VIEW'
   | 'CREATE_DRAFT'
   | 'EDIT_DRAFT'
+  | 'DELETE_DRAFT'
   | 'VALIDATE'
   | 'SUBMIT_CHECKER'
   | 'REVIEW'
@@ -629,7 +630,12 @@ class EffectiveAccessEngineClass {
       const d = configService.getDepartmentById(id);
       return d ? d.name : id;
     });
-    const allLinkedDepts = Array.from(new Set([...linkedDepts, ...configLinkedDepts]));
+    const ssotDeptAssignments = configService.getDepartmentReportAssignments({ reportKey, activeOnly: true });
+    const ssotAssignedDeptNames = ssotDeptAssignments.map((a) => {
+      const d = configService.getDepartmentById(a.departmentId);
+      return d ? d.name : a.departmentName;
+    });
+    const allLinkedDepts = Array.from(new Set([...linkedDepts, ...configLinkedDepts, ...ssotAssignedDeptNames]));
 
     // Relationship 1: Home Department Match
     const isHomeDept = Boolean(
@@ -646,7 +652,11 @@ class EffectiveAccessEngineClass {
 
     // Relationship 3: Direct User-Report Assignment
     const directAssignments = this.userReportAssignments.get(user.id);
-    const isDirectAssignment = Boolean(directAssignments && directAssignments.has(reportKey));
+    const ssotUserAssignments = configService.getUserReportAssignments({ userId: user.id, reportKey });
+    const isDirectAssignment = Boolean(
+      (directAssignments && directAssignments.has(reportKey)) ||
+      ssotUserAssignments.some((a) => a.isActive !== false)
+    );
 
     // Relationship 4: Special Access Grants
     let grants: SpecialAccessGrant[] = (user as any).specialAccessGrants || [];
@@ -726,6 +736,65 @@ class EffectiveAccessEngineClass {
           grantId: coveringGrant?.id,
           grantReason: coveringGrant?.reason,
         },
+      };
+      this.accessCache.set(cacheKey, res);
+      return res;
+    }
+
+    // 9b. MAKER Action: DELETE_DRAFT
+    if (action === 'DELETE_DRAFT') {
+      if (role !== 'MAKER') {
+        const res: AccessEvaluationResult = {
+          allowed: false,
+          reason: `Draft deletion requires MAKER role (current role: ${role}).`,
+          code: 'ROLE_FORBIDDEN',
+          context: { role, userDept, reportKey, reportDept: reportPrimaryDept },
+        };
+        this.accessCache.set(cacheKey, res);
+        return res;
+      }
+
+      if (submission) {
+        const subStatus = (submission.status || 'DRAFT').toUpperCase();
+        if (
+          subStatus === 'PENDING_CHECKER' ||
+          subStatus === 'APPROVED' ||
+          subStatus === 'SENT' ||
+          subStatus === 'SENDING'
+        ) {
+          const res: AccessEvaluationResult = {
+            allowed: false,
+            reason: `Submitted regulatory reports cannot be deleted (status: ${subStatus}). Under NBE Directive BSD/03/2020, submitted reports are permanent immutable records.`,
+            code: 'INVALID_WORKFLOW_STATE',
+            context: { role, userDept, reportKey, workflowStatus: subStatus },
+          };
+          this.accessCache.set(cacheKey, res);
+          return res;
+        }
+
+        if (role === 'MAKER') {
+          if (
+            submission.makerId &&
+            submission.makerId !== user.id &&
+            (!submission.department || submission.department.toLowerCase() !== (userDept || '').toLowerCase())
+          ) {
+            const res: AccessEvaluationResult = {
+              allowed: false,
+              reason: 'Ownership violation: Makers can only delete unsubmitted reports they created or that belong to their assigned department.',
+              code: 'DEPT_MISMATCH',
+              context: { role, userDept, reportKey, workflowStatus: subStatus },
+            };
+            this.accessCache.set(cacheKey, res);
+            return res;
+          }
+        }
+      }
+
+      const res: AccessEvaluationResult = {
+        allowed: true,
+        reason: 'Authorized to delete unsubmitted report draft.',
+        code: 'ALLOWED',
+        context: { role, userDept, reportKey },
       };
       this.accessCache.set(cacheKey, res);
       return res;
@@ -883,7 +952,31 @@ class EffectiveAccessEngineClass {
    * for a given user session.
    */
   public getEffectiveReportPermissionsMatrix(user: UserSession | UserAccount): EffectiveReportPermissions[] {
-    const allReports = getAllReports();
+    if (!user || !user.id || !user.role) {
+      return [];
+    }
+    const reportsMap = new Map<string, any>();
+    getAllReports().forEach((r) => reportsMap.set(r.ReturnKey, r));
+    try {
+      configService.getReports().forEach((r) => {
+        if (!reportsMap.has(r.returnKey)) {
+          reportsMap.set(r.returnKey, {
+            ReturnKey: r.returnKey,
+            Code: r.code || r.returnKey,
+            Name: r.name,
+            Title: r.name,
+            Category: r.category || 'Credit & Lending',
+            Frequency: r.frequency || 'MONTHLY',
+            department: configService.getDepartmentById(r.defaultDepartmentId)?.name || 'Credit Operations & Portfolio Management',
+            ReturnItemsList: [],
+            DynamicItemsList: [],
+            Formulas: [],
+            ValidationRules: [],
+          });
+        }
+      });
+    } catch (_) {}
+    const allReports = Array.from(reportsMap.values());
     const matrix: EffectiveReportPermissions[] = [];
 
     for (const report of allReports) {
