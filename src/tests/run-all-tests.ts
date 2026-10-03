@@ -384,6 +384,7 @@ import { runPhase33EmptyTemplateInitializationAndMakerDataEntryTests } from './p
 import { runPhase34AdminTemplateGovernanceAndMakerTitleImmutabilityTests } from './phase34-admin-template-governance-and-maker-title-immutability.test.ts';
 import { runPhase35RoleLockedDashboardsAndNotificationTests } from './phase35-role-locked-dashboards-and-notification-navigation.test.ts';
 import { runPhase36MakerSelectedCheckerAssignmentTests } from './phase36-maker-selected-checker-assignment-and-notification-workflow.test.ts';
+import { runPhase37CrossPhaseIntegrationSecurityRegressionAndAcceptanceTests } from './phase37-cross-phase-integration-security-regression-and-acceptance.test.ts';
 import { runXlsxExportAndDynamicValidationTests } from './xlsx-export-and-dynamic-validation.test.ts';
 
 async function runFullApplicationTestSuite() {
@@ -425,6 +426,7 @@ async function runFullApplicationTestSuite() {
   await runPhase34AdminTemplateGovernanceAndMakerTitleImmutabilityTests();
   await runPhase35RoleLockedDashboardsAndNotificationTests();
   await runPhase36MakerSelectedCheckerAssignmentTests();
+  await runPhase37CrossPhaseIntegrationSecurityRegressionAndAcceptanceTests();
   await runXlsxExportAndDynamicValidationTests();
   await runPdfAndSnapshotTests();
   await runIndexedDbOfflineStorageTests();
