@@ -383,6 +383,7 @@ import { runPhase32DynamicNbeApiEndpointRegistryAndSimulatorIntegrationTests } f
 import { runPhase33EmptyTemplateInitializationAndMakerDataEntryTests } from './phase33-empty-template-initialization-and-maker-data-entry.test.ts';
 import { runPhase34AdminTemplateGovernanceAndMakerTitleImmutabilityTests } from './phase34-admin-template-governance-and-maker-title-immutability.test.ts';
 import { runPhase35RoleLockedDashboardsAndNotificationTests } from './phase35-role-locked-dashboards-and-notification-navigation.test.ts';
+import { runPhase36MakerSelectedCheckerAssignmentTests } from './phase36-maker-selected-checker-assignment-and-notification-workflow.test.ts';
 import { runXlsxExportAndDynamicValidationTests } from './xlsx-export-and-dynamic-validation.test.ts';
 
 async function runFullApplicationTestSuite() {
@@ -423,6 +424,7 @@ async function runFullApplicationTestSuite() {
   await runPhase33EmptyTemplateInitializationAndMakerDataEntryTests();
   await runPhase34AdminTemplateGovernanceAndMakerTitleImmutabilityTests();
   await runPhase35RoleLockedDashboardsAndNotificationTests();
+  await runPhase36MakerSelectedCheckerAssignmentTests();
   await runXlsxExportAndDynamicValidationTests();
   await runPdfAndSnapshotTests();
   await runIndexedDbOfflineStorageTests();

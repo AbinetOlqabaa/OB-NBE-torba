@@ -65,6 +65,8 @@ import {
   Lock,
 } from 'lucide-react';
 import { templateInitializationService } from '../services/templateInitializationService.ts';
+import { CheckerSelector } from './CheckerSelector.tsx';
+import { effectiveAccessEngine } from '../services/effectiveAccessEngine.ts';
 
 export interface NavigationGuardHandler {
   hasUnsavedChanges: () => boolean;
@@ -84,7 +86,7 @@ interface DynamicReportFormProps {
     dynamicRows: Record<number, DynamicRowRecord[]>,
     expectedVersion?: number
   ) => Promise<ReportSubmission> | ReportSubmission;
-  onSubmitToChecker: (comment: string, expectedVersion?: number) => void;
+  onSubmitToChecker: (comment: string, expectedVersion?: number, selectedCheckerIds?: string[]) => void;
   onReuseSubmission?: (submissionId: string) => void;
   onRegisterNavigationGuard?: (guard: NavigationGuardHandler | null) => void;
 }
@@ -113,6 +115,7 @@ export const DynamicReportForm: React.FC<DynamicReportFormProps> = ({
   const [saveFeedback, setSaveFeedback] = useState<string | null>(null);
   const [exportNotice, setExportNotice] = useState<string | null>(null);
   const [submitModalOpen, setSubmitModalOpen] = useState<boolean>(false);
+  const [selectedCheckerIds, setSelectedCheckerIds] = useState<string[]>([]);
   const [submitComment, setSubmitComment] = useState<string>('');
   const [filterQuery, setFilterQuery] = useState<string>('');
   const [itemTypeFilter, setItemTypeFilter] = useState<string>('ALL');
@@ -1778,15 +1781,24 @@ export const DynamicReportForm: React.FC<DynamicReportFormProps> = ({
       {/* 6. Maker Submit to Checker Modal */}
       {submitModalOpen && (
         <div className="fixed inset-0 bg-slate-900/60 dark:bg-slate-950/80 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-5 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 transition-colors">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-5 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4 transition-colors max-h-[90vh] overflow-y-auto">
             <div>
               <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                Submit Report to Checker
+                Submit Report to Checker Queue
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                 You are submitting <span className="font-semibold text-slate-900 dark:text-white">{metadata.Title}</span> for formal 4-eyes Checker review and authorization.
               </p>
             </div>
+
+            {/* Phase 36: Server-side Checker selector */}
+            <CheckerSelector
+              reportKey={submission.reportKey || metadata.ReturnKey || metadata.Code}
+              currentUser={currentUser}
+              selectedCheckerIds={selectedCheckerIds}
+              onChangeSelectedCheckers={setSelectedCheckerIds}
+              submission={submission}
+            />
 
             <div className="space-y-1">
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block">
@@ -1814,7 +1826,7 @@ export const DynamicReportForm: React.FC<DynamicReportFormProps> = ({
                 onClick={() => {
                   vibrate([30, 45, 40]);
                   handleManualSave();
-                  onSubmitToChecker(submitComment);
+                  onSubmitToChecker(submitComment, submission?.version, selectedCheckerIds);
                   setSubmitModalOpen(false);
                 }}
                 className="px-4 py-1.5 text-xs font-bold text-white bg-ob-indigo-600 hover:bg-ob-indigo-700 rounded-lg transition-colors shadow-2xs cursor-pointer"

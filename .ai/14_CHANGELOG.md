@@ -4,6 +4,49 @@ All notable changes and engineering enhancements for the Oromia Bank NBE Regulat
 
 ---
 
+## [36.0.0-phase36-maker-selected-checker-assignment-and-notification-workflow] - 2026-10-03
+
+### Added & Enhanced
+- **Phase 36: Maker-Selected Checker Assignment & Notification Workflow (`36_MAKER_SELECTED_CHECKER_ASSIGNMENT_AND_NOTIFICATION_WORKFLOW.md`, `src/tests/phase36-maker-selected-checker-assignment-and-notification-workflow.test.ts`)**:
+  - **Server-Side Checker Eligibility & Filtering (`effectiveAccessEngine.ts`)**:
+    - Implemented `getEligibleCheckersForReport(reportKey, maker, submission)` and `validateCheckerSelection(reportKey, maker, selectedCheckerIds, submission)`.
+    - Server-side criteria strictly enforces:
+      1. Same-department assignment (or active Administrator-granted Special Cross-Department Access grant covering report/department).
+      2. Active account status (excludes `DISABLED`, `PENDING_APPROVAL`, `SUSPENDED`).
+      3. Designated `CHECKER` role.
+      4. Segregation of duties / conflict-of-interest rules: Maker is strictly prohibited from selecting themselves or reviewing their own submitted reports.
+      5. Safe reviewer representation: Only exposes safe, minimal profile data (`id`, `name`, `email`, `department`, `employeeId`, `status`, `authorizationReason`), with zero exposure of credentials, passwords, or biometrics.
+  - **Single & Multi-Reviewer Selection & Assignment Records (`src/types/regulatory.ts`, `submissionService.ts`)**:
+    - Added `ReviewerAssignment` interface and submission workflow record fields: `assignedCheckerIds`, `reviewerAssignments`, and `primaryCheckerId`.
+    - Maker may select a single Checker or multiple co-reviewers directly in the submission flow.
+    - Preserved a clear primary reviewer concept (`primaryCheckerId`, `isPrimary: boolean`, and backward-compatible `checkerId`, `checkerName`, `checkerEmail`, `checkerDepartment`).
+    - Validation rejects duplicate reviewer selections and forged/tampered IDs with explicit security audit logging.
+  - **4-Eyes Dual Control & Concurrency Governance**:
+    - Review actions remain governed by NBE 4-eyes approval rules.
+    - When specific reviewers are designated, unassigned Checkers are strictly blocked from reviewing the report.
+    - A single authoritative review action transitions the report state:
+      - When one assigned Checker approves, status transitions to `APPROVED`, recording the reviewing Checker and resolving secondary assignments as `SUPERSEDED`.
+      - Subsequent review attempts by other assigned Checkers are safely prevented by authoritative state resolution (`INVALID_WORKFLOW_STATE: Duplicate review prevented: Submission has already been APPROVED`).
+      - Conflicting actions (e.g. attempting to approve a rejected return) are blocked by authoritative workflow state rules.
+    - Implemented `acceptReview(id, checkerUser)` method enabling a Checker to accept/open the review, marking assignment status as `ACCEPTED` and recording the review start timestamp.
+  - **Authoritative Server-Generated Smart Notifications (`notificationService.ts`)**:
+    - On submission, smart notifications (`WORKFLOW`, `HIGH` priority) are emitted to all assigned Checkers with direct links to `CHECKER_INBOX`.
+    - Cross-department notification isolation strictly maintained (unauthorized Checkers receive zero assignment notifications).
+    - When a Checker accepts/opens review, Maker receives immediate `Review In Progress` notification.
+    - When review is completed, Maker receives instant review outcome notifications (Approval confirmation, Correction Request with reviewer notes, or Rejection reason).
+  - **UI Reviewer Selector (`src/components/CheckerSelector.tsx`)**:
+    - Embedded dynamic Checker Selector in both `DynamicReportForm.tsx` (report editor modal) and `MakerLibraryView.tsx` (library submission modal).
+    - Features: "Select Checker(s)" with eligible counter, selected reviewer chips list, primary reviewer badge and toggle, active status indicators, and clear explanatory guidance when no eligible same-department Checkers exist.
+  - **Authoritative Backend API Endpoints (`server.ts`)**:
+    - `GET /api/regulatory/reports/:reportKey/eligible-checkers`
+    - `POST /api/regulatory/submissions/:id/submit` (accepts `selectedCheckerIds: string[]`)
+    - `POST /api/regulatory/submissions/:id/accept-review`
+  - **Acceptance Testing Suite (`src/tests/phase36-maker-selected-checker-assignment-and-notification-workflow.test.ts`)**:
+    - 15 comprehensive automated test gates covering same-department filtering, inactive/disabled exclusions, other-department exclusions, self-selection prevention, forged ID rejection, duplicate selection prevention, multi-reviewer persistence, smart notifications dispatch, unauthorized review prevention, review acceptance, Maker outcome notifications, duplicate/conflicting concurrency prevention, correction request workflow, special access reviewer eligibility, and audit trail validation.
+    - Integrated into full regression harness `src/tests/run-all-tests.ts` with 100% pass rate.
+
+---
+
 ## [35.0.0-phase35-role-locked-dashboards-and-notification-navigation] - 2026-10-03
 
 ### Added & Enhanced

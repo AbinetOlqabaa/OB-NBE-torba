@@ -18,6 +18,7 @@ import type {
   LibraryLifecycleState,
   RemovalImpactAssessment,
   GovernedRemovalResult,
+  ReviewerAssignment,
 } from '../types/regulatory.ts';
 import {
   deriveLibraryLifecycleState,
@@ -34,6 +35,7 @@ import type { NormalizedValidationSummary, ProposedFix } from '../types/remediat
 import { nbeAdapter } from './nbeAdapter.ts';
 import type { DeliveryResult } from './nbeAdapter.ts';
 import { auditService } from './auditService.ts';
+import { notificationService } from './notificationService.ts';
 import { userService } from './userService.ts';
 import { departmentService } from './departmentService.ts';
 import { configService } from './configService.ts';
@@ -63,6 +65,16 @@ export const DEMO_USERS: UserSession[] = [
     institutionCode: '0000013',
     department: 'Credit Operations & Portfolio Management',
     employeeId: 'OB-CHK-055',
+    specialAccessGrants: [],
+  },
+  {
+    id: 'usr_checker_credit_2',
+    name: 'Almaz Bekele',
+    email: 'almaz.bekele@oromiabank.com',
+    role: 'CHECKER',
+    institutionCode: '0000013',
+    department: 'Credit Operations & Portfolio Management',
+    employeeId: 'OB-CHK-056',
     specialAccessGrants: [],
   },
   {
@@ -1446,12 +1458,15 @@ class SubmissionServiceClass {
 
   /**
    * Maker submits report to Checker.
+   * Phase 36: Supports Maker-selected Checker assignment with server-side validation
+   * and authoritative smart notifications dispatched to all assigned reviewers.
    */
   public submitToChecker(
     id: string,
     user: UserSession,
     commentText?: string,
-    expectedVersion?: number
+    expectedVersion?: number,
+    selectedCheckerIds?: string[]
   ): ReportSubmission {
     const sub = this.submissions.get(id);
     if (!sub) throw new Error(`Submission not found: ${id}`);
@@ -1477,6 +1492,33 @@ class SubmissionServiceClass {
       throw new Error(
         `Validation failed with ${valSummary.errorsCount} errors. Please correct all validation issues before submitting to Checker.`
       );
+    }
+
+    // Phase 36: Server-side Checker assignment & validation
+    let assignedCheckers: Array<{ id: string; name: string; email?: string; department?: string }> = [];
+    let reviewerAssignments: ReviewerAssignment[] | undefined = undefined;
+    let primaryChecker: { id: string; name: string; email?: string; department?: string } | undefined = undefined;
+    let primaryCheckerId: string | undefined = undefined;
+    let assignedCheckerIds: string[] | undefined = undefined;
+
+    if (selectedCheckerIds && selectedCheckerIds.length > 0) {
+      const val = effectiveAccessEngine.validateCheckerSelection(sub.reportKey, user, selectedCheckerIds, sub);
+      if (!val.valid) {
+        throw new Error(val.error);
+      }
+      assignedCheckers = val.selectedCheckers;
+      reviewerAssignments = assignedCheckers.map((c, idx) => ({
+        checkerId: c.id,
+        checkerName: c.name,
+        checkerEmail: c.email,
+        checkerDepartment: c.department,
+        assignedAt: new Date().toISOString(),
+        isPrimary: idx === 0,
+        status: 'PENDING',
+      }));
+      primaryChecker = assignedCheckers[0];
+      primaryCheckerId = primaryChecker?.id;
+      assignedCheckerIds = assignedCheckers.map((c) => c.id);
     }
 
     const isResubmission = sub.status === 'CORRECTION_REQUIRED' || sub.status === 'REJECTED';
@@ -1518,12 +1560,42 @@ class SubmissionServiceClass {
       dynamicRowsSnapshot: dynamicSnapshot,
       integrityHash,
       historicalSnapshots: [...(updatedSubmission.historicalSnapshots || []), submitSnapshot],
+      assignedCheckerIds,
+      reviewerAssignments,
+      primaryCheckerId,
+      checkerId: primaryChecker?.id || updatedSubmission.checkerId,
+      checkerName: primaryChecker?.name || updatedSubmission.checkerName,
+      checkerEmail: primaryChecker?.email || updatedSubmission.checkerEmail,
+      checkerDepartment: primaryChecker?.department || updatedSubmission.checkerDepartment,
     };
 
     this.submissions.set(id, finalSubWithSnapshot);
 
     // Save to IndexedDB
     indexedDbStorage.saveDraft(finalSubWithSnapshot).catch(() => {});
+
+    // Phase 36: Emit Authoritative Smart Notifications to all assigned Checkers
+    for (const c of assignedCheckers) {
+      notificationService.addNotification({
+        recipientUserId: c.id,
+        recipientRole: 'CHECKER',
+        recipientDepartment: c.department,
+        targetReportKey: sub.reportKey,
+        title: `New Review Assignment: Return ${sub.reportKey}`,
+        message: `Maker ${user.name} (${user.department}) assigned you to review return ${sub.reportKey} (4-eyes dual control). Remarks: "${commentText || 'Ready for 4-eyes review'}"`,
+        category: 'WORKFLOW',
+        priority: 'HIGH',
+        actionTab: 'CHECKER_INBOX',
+        metadata: {
+          submissionId: id,
+          reportKey: sub.reportKey,
+          makerId: user.id,
+          makerName: user.name,
+          isPrimary: c.id === primaryCheckerId,
+          assignedCheckersCount: assignedCheckers.length,
+        },
+      });
+    }
 
     try {
       realtimeSsotEngine.publishEvent({
@@ -1540,6 +1612,8 @@ class SubmissionServiceClass {
           status: 'PENDING_CHECKER',
           version: finalSubWithSnapshot.version,
           isResubmission,
+          assignedCheckerIds,
+          primaryCheckerId,
         },
       });
     } catch (_) {}
@@ -1553,11 +1627,87 @@ class SubmissionServiceClass {
       entityId: id,
       correlationId: 'corr_' + id,
       details: isResubmission
-        ? `Submission resubmitted for 4-eyes review by Maker ${user.name} (${user.department}) after addressing correction requests.`
-        : `Submission submitted for 4-eyes review by Maker ${user.name} (${user.department})`,
+        ? `Submission resubmitted for 4-eyes review by Maker ${user.name} (${user.department}) after addressing correction requests. Assigned Checkers: ${assignedCheckers.map(c => `${c.name} (${c.id})`).join(', ')}`
+        : `Submission submitted for 4-eyes review by Maker ${user.name} (${user.department}). Assigned Checkers: ${assignedCheckers.map(c => `${c.name} (${c.id})`).join(', ')}. Primary: ${primaryChecker?.name || 'N/A'}.`,
     });
 
+    if (assignedCheckers.length > 0) {
+      auditService.log({
+        actorId: user.id,
+        actorName: user.name,
+        actorRole: user.role,
+        action: 'CHECKER_ASSIGNED',
+        entityType: 'REPORT_SUBMISSION',
+        entityId: id,
+        correlationId: 'corr_assign_' + id,
+        details: `Assigned ${assignedCheckers.length} reviewer(s) to return ${sub.reportKey}: ${assignedCheckers.map(c => `${c.name} (${c.id})`).join(', ')}. Notifications dispatched to all assigned reviewers.`,
+      });
+    }
+
     return finalSubWithSnapshot;
+  }
+
+  /**
+   * Phase 36: Checker accepts/opens review. Emits authoritative notification to Maker.
+   */
+  public acceptReview(id: string, user: UserSession): ReportSubmission {
+    const sub = this.submissions.get(id);
+    if (!sub) throw new Error(`Submission not found: ${id}`);
+
+    const evalResult = effectiveAccessEngine.evaluateAccess(user, sub.reportKey, 'REVIEW', sub);
+    if (!evalResult.allowed) {
+      throw new Error(`Cannot accept review: ${evalResult.reason}`);
+    }
+
+    const assignments = (sub.reviewerAssignments || []).map((ra) => {
+      if (ra.checkerId === user.id) {
+        return {
+          ...ra,
+          status: 'ACCEPTED' as const,
+          openedAt: new Date().toISOString(),
+        };
+      }
+      return ra;
+    });
+
+    const updatedSub: ReportSubmission = {
+      ...sub,
+      reviewerAssignments: assignments,
+      updatedAt: new Date().toISOString(),
+    };
+
+    this.submissions.set(id, updatedSub);
+
+    notificationService.addNotification({
+      recipientUserId: sub.makerId,
+      recipientRole: 'MAKER',
+      recipientDepartment: sub.makerDepartment || user.department,
+      targetReportKey: sub.reportKey,
+      title: `Review In Progress: Return ${sub.reportKey}`,
+      message: `Checker ${user.name} has accepted and opened review on return ${sub.reportKey}.`,
+      category: 'WORKFLOW',
+      priority: 'MEDIUM',
+      actionTab: 'MAKER_WORKSPACE',
+      metadata: {
+        submissionId: id,
+        reportKey: sub.reportKey,
+        checkerId: user.id,
+        action: 'ACCEPT_REVIEW',
+      },
+    });
+
+    auditService.log({
+      actorId: user.id,
+      actorName: user.name,
+      actorRole: user.role,
+      action: 'CHECKER_REVIEW_ACCEPTED',
+      entityType: 'REPORT_SUBMISSION',
+      entityId: id,
+      correlationId: 'corr_' + id,
+      details: `Checker ${user.name} (${user.department}) accepted and opened 4-eyes review on return ${sub.reportKey}.`,
+    });
+
+    return updatedSub;
   }
 
   /**
@@ -1565,6 +1715,9 @@ class SubmissionServiceClass {
    * Enforces:
    * 1. Only CHECKERS can review. (Makers cannot approve; Admins are read-only).
    * 2. Checker must be from the same department, OR have Admin-granted special access.
+   * 3. Phase 36: If reviewers were specifically assigned, Checker must be an assigned reviewer.
+   * 4. Phase 36: Single authoritative decision transitions workflow state; duplicate/conflicting actions prevented.
+   * 5. Phase 36: Emits authoritative notification to Maker upon review completion.
    */
   public approveSubmission(
     id: string,
@@ -1599,6 +1752,22 @@ class SubmissionServiceClass {
         : 'CORRECTION_REQUIRED';
 
     const { updatedSubmission } = WorkflowEngine.applyTransition(sub, targetStatus, user, commentText);
+
+    // Phase 36: Update Reviewer Assignment record
+    const updatedAssignments = (sub.reviewerAssignments || []).map((ra) => {
+      if (ra.checkerId === user.id) {
+        return {
+          ...ra,
+          status: 'REVIEWED' as const,
+          reviewedAt: new Date().toISOString(),
+          notes: commentText,
+        };
+      }
+      return {
+        ...ra,
+        status: 'SUPERSEDED' as const,
+      };
+    });
 
     // Capture snapshot at Checker decision point
     const valuesSnapshot = JSON.parse(JSON.stringify(updatedSubmission.values));
@@ -1636,12 +1805,48 @@ class SubmissionServiceClass {
       dynamicRowsSnapshot: dynamicSnapshot,
       integrityHash,
       historicalSnapshots: [...(updatedSubmission.historicalSnapshots || []), reviewSnapshot],
+      reviewerAssignments: updatedAssignments.length > 0 ? updatedAssignments : undefined,
+      checkerId: user.id,
+      checkerName: user.name,
+      checkerEmail: user.email,
+      checkerDepartment: user.department,
     };
 
     this.submissions.set(id, finalSubWithSnapshot);
 
     // Save to IndexedDB
     indexedDbStorage.saveDraft(finalSubWithSnapshot).catch(() => {});
+
+    // Phase 36: Authoritative Smart Notification to Maker upon review outcome
+    let notifTitle = `Review Complete: Return ${sub.reportKey} Approved`;
+    let notifMsg = `Your return ${sub.reportKey} has been verified and approved by Checker ${user.name}. Ready for final NBE delivery.`;
+    if (action === 'REJECT') {
+      notifTitle = `Review Decision: Return ${sub.reportKey} Rejected`;
+      notifMsg = `Checker ${user.name} rejected return ${sub.reportKey}. Reason: "${commentText || 'No reason provided'}"`;
+    } else if (action === 'REQUEST_CORRECTION') {
+      notifTitle = `Correction Requested: Return ${sub.reportKey}`;
+      notifMsg = `Checker ${user.name} requested corrections on return ${sub.reportKey}. Notes: "${commentText || 'Please verify figures'}"`;
+    }
+
+    notificationService.addNotification({
+      recipientUserId: sub.makerId,
+      recipientRole: 'MAKER',
+      recipientDepartment: sub.makerDepartment || user.department,
+      targetReportKey: sub.reportKey,
+      title: notifTitle,
+      message: notifMsg,
+      category: 'WORKFLOW',
+      priority: 'HIGH',
+      actionTab: 'MAKER_WORKSPACE',
+      metadata: {
+        submissionId: id,
+        reportKey: sub.reportKey,
+        checkerId: user.id,
+        checkerName: user.name,
+        action,
+        decision: targetStatus,
+      },
+    });
 
     try {
       realtimeSsotEngine.publishEvent({
@@ -1657,6 +1862,8 @@ class SubmissionServiceClass {
           reportKey: sub.reportKey,
           status: targetStatus,
           version: finalSubWithSnapshot.version,
+          checkerId: user.id,
+          checkerName: user.name,
         },
       });
     } catch (_) {}
@@ -1670,6 +1877,17 @@ class SubmissionServiceClass {
       entityId: id,
       correlationId: 'corr_' + id,
       details: `Checker ${user.name} (${user.department}) reviewed submission with decision: ${targetStatus}. Notes: ${commentText || 'N/A'}`,
+    });
+
+    auditService.log({
+      actorId: user.id,
+      actorName: user.name,
+      actorRole: user.role,
+      action: 'NOTIFICATION_DISPATCHED',
+      entityType: 'NOTIFICATION',
+      entityId: id,
+      correlationId: 'corr_notif_' + id,
+      details: `Dispatched review outcome notification to Maker ${sub.makerName} (${sub.makerId}) for return ${sub.reportKey}: ${targetStatus}.`,
     });
 
     return finalSubWithSnapshot;

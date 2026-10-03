@@ -36,6 +36,7 @@ import { sessionService } from './src/services/sessionService.ts';
 import { nbeReportPackageService } from './src/services/nbeReportPackageNormalizer.ts';
 import { nbeEndpointRegistry } from './src/services/nbeEndpointRegistry.ts';
 import { notificationService } from './src/services/notificationService.ts';
+import type { UserSession } from './src/types/regulatory.ts';
 
 dotenv.config();
 
@@ -1169,17 +1170,60 @@ app.post('/api/regulatory/validate-payload', (req, res) => {
   }
 });
 
-// Maker submit to Checker
+// Phase 36: Server-side query for eligible Checkers for a given report
+app.get('/api/regulatory/reports/:reportKey/eligible-checkers', (req, res) => {
+  const { makerId, department } = req.query;
+  const makerUser = makerId ? userService.getById(String(makerId)) : DEMO_USERS[0];
+  const userSession: UserSession = makerUser
+    ? {
+        id: makerUser.id,
+        name: makerUser.name,
+        email: makerUser.email,
+        role: makerUser.role,
+        institutionCode: makerUser.institutionCode,
+        department: (department as string) || makerUser.department,
+        employeeId: makerUser.employeeId,
+        specialAccessGrants: makerUser.specialAccessGrants || [],
+      }
+    : DEMO_USERS[0];
+
+  try {
+    const eligible = effectiveAccessEngine.getEligibleCheckersForReport(req.params.reportKey, userSession);
+    res.json({
+      reportKey: req.params.reportKey,
+      department: userSession.department,
+      count: eligible.length,
+      checkers: eligible,
+    });
+  } catch (err: any) {
+    res.status(getAuthOrClientStatusCode(err.message)).json({ error: err.message });
+  }
+});
+
+// Maker submit to Checker (Phase 36: supports selectedCheckerIds)
 app.post('/api/regulatory/submissions/:id/submit', (req, res) => {
-  const { user, comment, expectedVersion } = req.body;
+  const { user, comment, expectedVersion, selectedCheckerIds } = req.body;
   const activeUser = user || DEMO_USERS[0];
   try {
     const updated = submissionService.submitToChecker(
       req.params.id,
       activeUser,
       comment,
-      expectedVersion !== undefined ? Number(expectedVersion) : undefined
+      expectedVersion !== undefined ? Number(expectedVersion) : undefined,
+      Array.isArray(selectedCheckerIds) ? selectedCheckerIds : undefined
     );
+    res.json(updated);
+  } catch (err: any) {
+    res.status(getAuthOrClientStatusCode(err.message)).json({ error: err.message });
+  }
+});
+
+// Phase 36: Checker accepts/opens review
+app.post('/api/regulatory/submissions/:id/accept-review', (req, res) => {
+  const { user } = req.body;
+  const activeUser = user || DEMO_USERS[1];
+  try {
+    const updated = submissionService.acceptReview(req.params.id, activeUser);
     res.json(updated);
   } catch (err: any) {
     res.status(getAuthOrClientStatusCode(err.message)).json({ error: err.message });
